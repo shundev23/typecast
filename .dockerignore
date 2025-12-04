@@ -1,0 +1,10 @@
+# Git管理外のファイル
+.git
+.gitignore
+.env
+
+# Goに関係ないファイル
+typecast-web/
+check.go
+Dockerfile
+README.md
