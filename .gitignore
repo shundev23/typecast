@@ -1,0 +1,15 @@
+# 環境変数・秘密鍵 
+.env
+.env.local
+
+# Go
+/typecast
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+vendor/
+
+# Mac
+.DS_Store
