@@ -20,6 +20,8 @@ jobs:
       # 1. 依存関係のインストールとビルド
       - name: Install and Build
         working-directory: ./typecast-web # webフォルダの中で実行
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
         run: |
           npm ci
           npm run build
