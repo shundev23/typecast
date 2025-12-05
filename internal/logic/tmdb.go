@@ -86,7 +86,6 @@ func (s *TmdbService) GetMovieMetadata(movieTitle string) (string, []model.Provi
 	resp2, err := http.Get(u2.String())
 	if err != nil {
 		// 配信情報が取れなくてもポスターだけ返す
-		Printf("[ERROR] TMDB Request Error: %v", err)
 		return posterURL, nil
 	}
 	defer resp2.Body.Close()
