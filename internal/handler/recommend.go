@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"log"
 	"net/http"
 	"typecast/internal/logic"
 	"typecast/internal/model"
@@ -15,27 +14,21 @@ type RecommendHandler struct {
 }
 
 func (h *RecommendHandler) Recommend(c echo.Context) error {
-	log.Println("[DEBUG] Recommend Handler: Request received")
 
 	var req model.RecommendRequest
 	if err := c.Bind(&req); err != nil {
-		log.Printf("[ERROR] Bind failed: %v", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request"})
 	}
 
 	if req.MBTI == "" {
 		req.MBTI = "INTP"
 	}
-	log.Printf("[DEBUG] Processing for MBTI: %s, Mood: %s", req.MBTI, req.Mood)
 
 	// 1. Geminiから映画リスト(JSON)を取得
 	movies, err := h.Gemini.GetRecommendations(c.Request().Context(), req.MBTI, req.Mood)
 	if err != nil {
-		log.Printf("[ERROR] Gemini Service failed: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
-
-	log.Printf("[DEBUG] Gemini returned %d movies", len(movies))
 
 	// 2. 各映画についてTMDBで画像を検索・付与
 	for i := range movies {

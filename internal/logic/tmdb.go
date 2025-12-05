@@ -86,17 +86,15 @@ func (s *TmdbService) GetMovieMetadata(movieTitle string) (string, []model.Provi
 	resp2, err := http.Get(u2.String())
 	if err != nil {
 		// 配信情報が取れなくてもポスターだけ返す
-		log.Printf("[ERROR] TMDB Request Error: %v", err)
+		Printf("[ERROR] TMDB Request Error: %v", err)
 		return posterURL, nil
 	}
 	defer resp2.Body.Close()
 
 	bodyBytes, _ := io.ReadAll(resp2.Body)
-	log.Printf("[DEBUG] Movie: %s (ID:%d), Response: %s", movieTitle, movie.ID, string(bodyBytes))
 
 	var providerResult tmdbProviderResponse
 	if err := json.Unmarshal(bodyBytes, &providerResult); err != nil {
-		log.Printf("JSON Parse Error: %v", err)
 		return posterURL, nil
 	}
 

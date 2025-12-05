@@ -20,11 +20,6 @@ func main() {
 	}
 	defer f.Close()
 
-	// 標準のlog出力をファイルに向ける
-	log.SetOutput(f)
-
-	log.Println("=== SERVER STARTED ===") // 起動確認ログ
-
 	if err := godotenv.Load(); err != nil {
 		log.Println("Info: .env file not found. Using system environment variables.")
 	}
@@ -66,7 +61,4 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-
-	log.Printf("Starting server on port %s...", port)
-	e.Logger.Fatal(e.Start(":" + port))
 }
