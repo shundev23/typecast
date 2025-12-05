@@ -50,6 +50,11 @@ function App() {
       <header className="max-w-6xl mx-auto mb-12 text-center">
         <div className="flex items-center justify-center gap-3 mb-2">
           <Film className="w-8 h-8 text-cyan-400" />
+          <img 
+            src="/logo.png" 
+            alt="Typecast Logo" 
+            className="w-12 h-12 object-contain drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]" 
+          />
           <h1 className="text-3xl font-bold tracking-wider">TYPECAST</h1>
         </div>
         <p className="text-gray-400">MBTI Logic-Based Cinema Recommender</p>
