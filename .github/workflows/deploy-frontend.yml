@@ -1,0 +1,35 @@
+name: Deploy Frontend to Firebase Hosting
+
+on:
+  push:
+    branches:
+      - main
+    # webフォルダに変更があった時だけ動かす
+    paths:
+      - 'typecast-web/**'
+      - '.github/workflows/deploy-frontend.yml'
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1. 依存関係のインストールとビルド
+      - name: Install and Build
+        working-directory: ./web # webフォルダの中で実行
+        run: |
+          npm ci
+          npm run build
+
+      # 2. Firebase Hostingへのデプロイ
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.GCP_SA_KEY }}' # 既存の鍵を再利用
+          channelId: live # 本番環境(live)にデプロイ
+          projectId: '${{ secrets.GCP_PROJECT_ID }}'
+          entryPoint: ./web # firebase.jsonがある場所を指定

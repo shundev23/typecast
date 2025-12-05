@@ -20,7 +20,7 @@ function App() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const API_URL = 'http://localhost:8080/api/recommend';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/recommend';
 
   const handleRecommend = async () => {
     if (!mood) return;
