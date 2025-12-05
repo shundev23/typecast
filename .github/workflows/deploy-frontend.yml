@@ -21,7 +21,7 @@ jobs:
       - name: Install and Build
         working-directory: ./typecast-web # webフォルダの中で実行
         env:
-          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_API_URL: '${{ secrets.VITE_API_URL }}'
         run: |
           npm ci
           npm run build
