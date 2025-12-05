@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Film, Sparkles, Loader2, Brain, Lightbulb } from 'lucide-react';
+import { Sparkles, Loader2, Brain, Lightbulb } from 'lucide-react';
 
 // 新しいレスポンス型
 type Movie = {
