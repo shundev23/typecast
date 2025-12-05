@@ -19,7 +19,7 @@ jobs:
 
       # 1. 依存関係のインストールとビルド
       - name: Install and Build
-        working-directory: ./web # webフォルダの中で実行
+        working-directory: ./typecast-web # webフォルダの中で実行
         run: |
           npm ci
           npm run build
