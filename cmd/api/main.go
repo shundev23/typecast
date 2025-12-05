@@ -14,6 +14,17 @@ import (
 )
 
 func main() {
+	f, err := os.OpenFile("debug.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer f.Close()
+
+	// 標準のlog出力をファイルに向ける
+	log.SetOutput(f)
+
+	log.Println("=== SERVER STARTED ===") // 起動確認ログ
+
 	if err := godotenv.Load(); err != nil {
 		log.Println("Info: .env file not found. Using system environment variables.")
 	}
@@ -48,7 +59,7 @@ func main() {
 		return c.String(http.StatusOK, "Typecast API is running!!!")
 	})
 
-	e.POST("api/recommend", h.Recommend)
+	e.POST("/api/recommend", h.Recommend)
 
 	// サーバー起動
 	port := os.Getenv("PORT")
