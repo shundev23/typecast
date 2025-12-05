@@ -49,7 +49,6 @@ function App() {
     <div className="min-h-screen bg-gray-950 text-gray-100 p-8 font-sans">
       <header className="max-w-6xl mx-auto mb-12 text-center">
         <div className="flex items-center justify-center gap-3 mb-2">
-          <Film className="w-8 h-8 text-cyan-400" />
           <img 
             src="/logo.png" 
             alt="Typecast Logo" 
