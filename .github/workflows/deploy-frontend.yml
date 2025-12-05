@@ -32,4 +32,4 @@ jobs:
           firebaseServiceAccount: '${{ secrets.GCP_SA_KEY }}' # 既存の鍵を再利用
           channelId: live # 本番環境(live)にデプロイ
           projectId: '${{ secrets.GCP_PROJECT_ID }}'
-          entryPoint: ./web # firebase.jsonがある場所を指定
+          entryPoint: ./typecast-web # firebase.jsonがある場所を指定
