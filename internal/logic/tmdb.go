@@ -33,6 +33,7 @@ type tmdbSearchResponse struct {
 // 配信情報の型
 type tmdbProviderResponse struct {
 	Results map[string]struct {
+		Link     string `json:"link"`
 		Flatrate []struct {
 			ProviderName string `json:"provider_name"`
 			LogoPath     string `json:"logo_path"`
@@ -107,60 +108,15 @@ func (s *TmdbService) GetMovieMetadata(movieTitle string) (string, []model.Provi
 	// 日本 (JP) の見放題 (Flatrate) 情報だけ抽出
 	var providers []model.Provider
 	if jpData, ok := providerResult.Results["JP"]; ok {
+		fmt.Printf("[DEBUG] Link found for %s: %s\n", movieTitle, jpData.Link)
 		for _, p := range jpData.Flatrate {
 			providers = append(providers, model.Provider{
 				Name: p.ProviderName,
 				Logo: "https://image.tmdb.org/t/p/original" + p.LogoPath,
+				Link: jpData.Link,
 			})
 		}
 	}
 
 	return posterURL, providers
-}
-
-// マップのキー一覧を取得する補助関数（デバッグ用）
-func getKeys(m map[string]struct {
-	Flatrate []struct {
-		ProviderName string `json:"provider_name"`
-		LogoPath     string `json:"logo_path"`
-	} `json:"flatrate"`
-}) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
-func (s *TmdbService) GetPosterURL(movieTitle string) string {
-	if s.apiKey == "" {
-		return ""
-	}
-
-	// 検索クエリの作成
-	endpoint := "https://api.themoviedb.org/3/search/movie"
-	u, _ := url.Parse(endpoint)
-	q := u.Query()
-	q.Set("api_key", s.apiKey)
-	q.Set("query", movieTitle)
-	q.Set("language", "ja-JP") // 日本語ポスターがあれば優先
-	u.RawQuery = q.Encode()
-
-	resp, err := http.Get(u.String())
-	if err != nil {
-		return ""
-	}
-	defer resp.Body.Close()
-
-	var result tmdbSearchResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return ""
-	}
-
-	if len(result.Results) > 0 && result.Results[0].PosterPath != "" {
-		// 画像のベースURL + サイズ(w500) + パス
-		return "https://image.tmdb.org/t/p/w500" + result.Results[0].PosterPath
-	}
-
-	return "" // 画像が見つからない場合
 }

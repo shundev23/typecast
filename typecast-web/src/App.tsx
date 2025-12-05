@@ -12,8 +12,9 @@ type Movie = {
 };
 
 type Provider = {
-name: string;
-logo: string;
+  name: string;
+  logo: string;
+  link: string;
 }
 
 type RecommendResponse = {
@@ -143,19 +144,26 @@ function App() {
                   <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
                     Available on (JP)
                   </p>
-                 <div className="flex flex-wrap gap-2">
-                  {movie.providers.map((provider, pIdx) => (
-                    <img 
-                    key={pIdx}
-                    src={provider.logo} 
-                    alt={provider.name} 
-                    title={provider.name} // マウスホバーで名前表示
-                    className="w-8 h-8 rounded-md border border-gray-700 shadow-sm"
-                  />
-                ))}
+                  <div className="flex flex-wrap gap-2">
+                    {movie.providers.map((provider, pIdx) => (
+                      <a 
+                      key={pIdx}
+                      href={provider.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="transition-transform hover:scale-110"
+                      >
+                      <img 
+                       src={provider.logo} 
+                       alt={provider.name} 
+                       title={`Watch on ${provider.name}`}
+                       className="w-8 h-8 rounded-md border border-gray-700 shadow-sm cursor-pointer"
+                      />
+                      </a>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
             </div>
           </div>
         ))}

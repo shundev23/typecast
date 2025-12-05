@@ -24,4 +24,5 @@ type MovieRecommendation struct {
 type Provider struct {
 	Name string `json:"name"`
 	Logo string `json:"logo"`
+	Link string `json:"link"`
 }
