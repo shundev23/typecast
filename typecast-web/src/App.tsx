@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 // アイコン
-import { Sparkles, Loader2, Brain, Lightbulb, LogIn, LogOut, User as UserIcon } from 'lucide-react';
+import { Sparkles, Loader2, Brain, Lightbulb, LogIn, LogOut, User as UserIcon, Share2 } from 'lucide-react';
 // Firebase Auth (認証)
 import { signInWithPopup, signOut, onAuthStateChanged, type User } from 'firebase/auth';
 // Firestore (データベース)
@@ -179,6 +179,24 @@ function App() {
     }
   };
 
+  // シェア機能の実装
+  const handleShare = () => {
+    if (movies.length === 0) return;
+
+    const latestScore = historyData[historyData.length - 1]?.score ?? 0;
+    const scoreText = latestScore > 0 ? `+${latestScore}` : `${latestScore}`;
+    
+    // 映画タイトルをリスト化
+    const movieList = movies.map(m => `・${m.title}`).join('\n');
+    
+    // 投稿テキストの作成
+    const text = `🎬 TYPECAST Analysis Result\n\n👤 Type: ${mbti}\n🧠 Mood: "${mood}"\n📈 Sentiment: ${scoreText}\n\n🧪 Prescription:\n${movieList}\n\n#TYPECAST`;
+    
+    // URLエンコードしてTwitterの投稿画面を開く
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`;
+    window.open(url, '_blank');
+  };
+
   // --- JSX (画面描画) ---
 
   return (
@@ -322,6 +340,13 @@ function App() {
                     </p>
                 </div>
             </div>
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm font-medium border border-gray-700 hover:border-gray-500 rounded-full px-4 py-2"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>Share Result on X</span>
+            </button>
         </div>
       )}
 
