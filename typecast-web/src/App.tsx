@@ -1,8 +1,22 @@
 import { useState, useEffect } from 'react';
+// アイコン
 import { Sparkles, Loader2, Brain, Lightbulb, LogIn, LogOut, User as UserIcon } from 'lucide-react';
+// Firebase Auth (認証)
 import { signInWithPopup, signOut, onAuthStateChanged, type User } from 'firebase/auth';
+// Firestore (データベース)
 import { doc, setDoc, serverTimestamp, getDocs, collection } from 'firebase/firestore'; 
+// 設定ファイル
 import { auth, googleProvider, db } from './firebase';
+// チャートコンポーネント
+import { MoodChart } from './components/MoodChart';
+
+// --- 型定義 ---
+
+type Provider = {
+  name: string;
+  logo: string;
+  link: string;
+}
 
 type Movie = {
   title: string;
@@ -15,32 +29,73 @@ type Movie = {
   providers?: Provider[];
 };
 
-type Provider = {
-  name: string;
-  logo: string;
-  link: string;
-}
-
 type RecommendResponse = {
+  sentiment_score: number; // ★追加: 感情スコア
   movies: Movie[];
 };
 
+// ★追加: チャート表示用のデータ型
+type HistoryItem = {
+  timestamp: Date;
+  score: number;
+  mood: string;
+};
+
 function App() {
+  // --- State管理 ---
   const [mbti, setMbti] = useState('INTP');
   const [mood, setMood] = useState('');
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  
+  // チャート用データ
+  const [historyData, setHistoryData] = useState<HistoryItem[]>([]);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/recommend';
 
-  // ログイン監視
+  // --- 1. ログイン状態の監視 ---
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
     return () => unsubscribe();
   }, []);
+
+  // --- 2. ログイン時に履歴データを取得 ---
+  useEffect(() => {
+    if (!user) {
+      setHistoryData([]);
+      return;
+    }
+
+    const fetchHistory = async () => {
+      try {
+        const historyRef = collection(db, 'users', user.uid, 'history');
+        const snapshot = await getDocs(historyRef);
+        const items: HistoryItem[] = [];
+        
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          // scoreデータがある場合のみチャートに追加
+          if (data.timestamp && typeof data.score === 'number') {
+            items.push({
+              timestamp: data.timestamp.toDate(),
+              score: data.score,
+              mood: data.mood || ''
+            });
+          }
+        });
+        setHistoryData(items);
+      } catch (error) {
+        console.error("Failed to fetch history:", error);
+      }
+    };
+
+    fetchHistory();
+  }, [user]);
+
+  // --- ハンドラー関数 ---
 
   const handleLogin = async () => {
     try {
@@ -61,27 +116,24 @@ function App() {
   const handleRecommend = async () => {
     if (!mood) return;
     setLoading(true);
-    setMovies([]);
+    setMovies([]); // 前の結果をクリア
 
     console.log("--- Recommendation Started ---");
-    console.log("Current User:", user);
 
-    // 過去の履歴を取得して、除外リストを作成
+    // 除外リスト(被り防止)の作成
     let ignoreMovies: string[] = [];
-    if (user){
-      try{
-        const historyRef = collection(db, 'user', user.uid, 'history');
+    if (user) {
+      try {
+        const historyRef = collection(db, 'users', user.uid, 'history');
         const snapshot = await getDocs(historyRef);
-
         ignoreMovies = snapshot.docs.map(doc => doc.data().title);
-
-        console.log("除外リスト(送信前):", ignoreMovies);
-      }catch(err){
-        console.error("Failed to fetch history:", err);
+      } catch (err) {
+        console.error("Failed to fetch history for ignore list:", err);
       }
     }
 
     try {
+      // APIリクエスト
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -92,14 +144,10 @@ function App() {
       const data: RecommendResponse = await res.json();
       setMovies(data.movies);
 
-      console.log("Movies fetched:", data.movies.length);
-
-      // ★Firestoreへの保存処理
+      // Firestoreへの保存 & チャート更新
       if (user && data.movies.length > 0) {
-        console.log("Saving to Firestore...", user.uid);
-        
         const savePromises = data.movies.map((movie) => {
-          
+          // タイトルの「/」を「：」に置換してエラーを防ぐ
           const safeTitle = movie.title.replace(/\//g, '：');
           const historyRef = doc(db, 'users', user.uid, 'history', safeTitle);
           
@@ -107,11 +155,20 @@ function App() {
             title: movie.title,
             poster: movie.poster,
             timestamp: serverTimestamp(),
+            // スコアと気分も保存
+            score: data.sentiment_score,
+            mood: mood
           });
         });
         
         await Promise.all(savePromises);
-        console.log("✅ History saved successfully!");
+        
+        // チャートを即時更新するためにstateにも追加
+        setHistoryData(prev => [...prev, {
+            timestamp: new Date(),
+            score: data.sentiment_score,
+            mood: mood
+        }]);
       }
 
     } catch (error) {
@@ -122,10 +179,12 @@ function App() {
     }
   };
 
+  // --- JSX (画面描画) ---
+
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 p-8 font-sans">
       <header className="max-w-6xl mx-auto mb-12 relative">
-        {/* ログインエリア */}
+        {/* PC用ログインエリア */}
         <div className="absolute right-0 top-0 hidden md:flex items-center gap-4">
           {user ? (
             <div className="flex items-center gap-3 bg-gray-900 px-4 py-2 rounded-full border border-gray-800">
@@ -147,6 +206,7 @@ function App() {
           )}
         </div>
 
+        {/* ロゴエリア */}
         <div className="text-center">
           <div className="flex items-center justify-center gap-3 mb-2">
             <img src="/logo.png" alt="Typecast Logo" className="w-12 h-12 object-contain drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]" />
@@ -156,7 +216,7 @@ function App() {
         </div>
       </header>
 
-      {/* スマホ用ログイン */}
+      {/* スマホ用ログインボタン */}
       <div className="md:hidden flex justify-center mb-8">
           {!user && (
             <button onClick={handleLogin} className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-cyan-400 px-6 py-2 rounded-full border border-gray-700 transition-all text-sm font-bold">
@@ -172,42 +232,61 @@ function App() {
           )}
       </div>
 
+      {/* 感情分析チャート (データがあるときだけ表示) */}
+      {user && historyData.length > 0 && (
+        <div className="max-w-4xl mx-auto mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+           <MoodChart data={historyData} />
+        </div>
+      )}
+
       {/* 入力フォーム */}
       <div className="max-w-2xl mx-auto bg-gray-900/80 p-6 rounded-2xl border border-gray-800 shadow-2xl mb-12 backdrop-blur-sm">
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-3 gap-4">
              <div className="col-span-1">
                <label className="block text-xs font-bold text-gray-500 mb-1">TYPE</label>
-               <select value={mbti} onChange={(e) => setMbti(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm focus:border-cyan-500 outline-none">
-                <optgroup label="Analysts (分析家)">
-                  <option value="INTJ">INTJ (建築家)</option>
-                  <option value="INTP">INTP (論理学者)</option>
-                  <option value="ENTJ">ENTJ (指揮官)</option>
-                  <option value="ENTP">ENTP (討論者)</option>
-                </optgroup>
-                <optgroup label="Diplomats (外交官)">
-                  <option value="INFJ">INFJ (提唱者)</option>
-                  <option value="INFP">INFP (仲介者)</option>
-                  <option value="ENFJ">ENFJ (主人公)</option>
-                  <option value="ENFP">ENFP (運動家)</option>
-                </optgroup>
-                <optgroup label="Sentinels (番人)">
-                  <option value="ISTJ">ISTJ (管理者)</option>
-                  <option value="ISFJ">ISFJ (擁護者)</option>
-                  <option value="ESTJ">ESTJ (幹部)</option>
-                  <option value="ESFJ">ESFJ (領事官)</option>
-                </optgroup>
-                <optgroup label="Explorers (探検家)">
-                  <option value="ISTP">ISTP (巨匠)</option>
-                  <option value="ISFP">ISFP (冒険家)</option>
-                  <option value="ESTP">ESTP (起業家)</option>
-                  <option value="ESFP">ESFP (エンターテイナー)</option>
-                </optgroup>
-              </select>
+               {/* 16タイプ対応のセレクトボックス */}
+               <select 
+                  value={mbti} 
+                  onChange={(e) => setMbti(e.target.value)} 
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm focus:border-cyan-500 outline-none appearance-none"
+                >
+                  <optgroup label="Analysts (分析家)">
+                    <option value="INTJ">INTJ (建築家)</option>
+                    <option value="INTP">INTP (論理学者)</option>
+                    <option value="ENTJ">ENTJ (指揮官)</option>
+                    <option value="ENTP">ENTP (討論者)</option>
+                  </optgroup>
+                  <optgroup label="Diplomats (外交官)">
+                    <option value="INFJ">INFJ (提唱者)</option>
+                    <option value="INFP">INFP (仲介者)</option>
+                    <option value="ENFJ">ENFJ (主人公)</option>
+                    <option value="ENFP">ENFP (運動家)</option>
+                  </optgroup>
+                  <optgroup label="Sentinels (番人)">
+                    <option value="ISTJ">ISTJ (管理者)</option>
+                    <option value="ISFJ">ISFJ (擁護者)</option>
+                    <option value="ESTJ">ESTJ (幹部)</option>
+                    <option value="ESFJ">ESFJ (領事官)</option>
+                  </optgroup>
+                  <optgroup label="Explorers (探検家)">
+                    <option value="ISTP">ISTP (巨匠)</option>
+                    <option value="ISFP">ISFP (冒険家)</option>
+                    <option value="ESTP">ESTP (起業家)</option>
+                    <option value="ESFP">ESFP (エンターテイナー)</option>
+                  </optgroup>
+                </select>
              </div>
              <div className="col-span-2">
                <label className="block text-xs font-bold text-gray-500 mb-1">MOOD</label>
-               <input type="text" value={mood} onChange={(e) => setMood(e.target.value)} placeholder="例: 知恵熱が出るような難解なやつ" className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm focus:border-cyan-500 outline-none" onKeyDown={(e) => e.key === 'Enter' && handleRecommend()} />
+               <input 
+                 type="text" 
+                 value={mood} 
+                 onChange={(e) => setMood(e.target.value)} 
+                 placeholder="例: 知恵熱が出るような難解なやつ" 
+                 className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm focus:border-cyan-500 outline-none" 
+                 onKeyDown={(e) => e.key === 'Enter' && handleRecommend()} 
+               />
              </div>
           </div>
           <button onClick={handleRecommend} disabled={loading || !mood} className="w-full bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-800 disabled:text-gray-500 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all">
@@ -217,7 +296,7 @@ function App() {
         </div>
       </div>
 
-      {/* 結果表示 */}
+      {/* 結果表示エリア */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {movies.map((movie, idx) => (
           <div key={idx} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-cyan-500/50 transition-all group shadow-lg">
@@ -229,6 +308,7 @@ function App() {
               </div>
             </div>
             <div className="p-5 space-y-4">
+              {/* 主機能 (label_main を使用) */}
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-cyan-300 text-xs font-bold uppercase tracking-wider">
                   <Brain className="w-3 h-3" />
@@ -236,13 +316,16 @@ function App() {
                 </div>
                 <p className="text-sm text-gray-300 leading-relaxed">{movie.reason_main}</p>
               </div>
+              {/* 補助機能 (label_sub を使用) */}
               <div className="border-t border-gray-800 pt-3 space-y-1">
                 <div className="flex items-center gap-2 text-purple-300 text-xs font-bold uppercase tracking-wider">
                   <Lightbulb className="w-3 h-3" />
-                  <span>{movie.reason_sub}</span>
+                  <span>{movie.label_sub}</span>
                 </div>
                 <p className="text-sm text-gray-300 leading-relaxed">{movie.reason_sub}</p>
               </div>
+              
+              {/* 配信サイト情報 */}
               {movie.providers && movie.providers.length > 0 && (
                 <div className="border-t border-gray-800 pt-3">
                   <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Available on (JP)</p>

@@ -8,7 +8,8 @@ type RecommendRequest struct {
 
 // APIからのレスポンス
 type RecommendResponse struct {
-	Movies []MovieRecommendation `json:"movies"`
+	SentimentScore int                   `json:"sentiment_score"`
+	Movies         []MovieRecommendation `json:"movies"`
 }
 
 // 映画1本分のデータ

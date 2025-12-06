@@ -39,7 +39,7 @@ func NewGeminiService(ctx context.Context) (*GeminiService, error) {
 	}, nil
 }
 
-func (s *GeminiService) GetRecommendations(ctx context.Context, mbti string, mood string, ignoreMovies[]string) ([]model.MovieRecommendation, error) {
+func (s *GeminiService) GetRecommendations(ctx context.Context, mbti string, mood string, ignoreMovies []string) (model.RecommendResponse, error) {
 	// 心理機能を取得
 	funcs := GetFunctions(mbti)
 	
@@ -57,7 +57,7 @@ func (s *GeminiService) GetRecommendations(ctx context.Context, mbti string, moo
 	// JSONスキーマに合わせたプロンプト
 	prompt := fmt.Sprintf(`
 	あなたはMBTIの専門家かつ映画ソムリエです。
-	以下のユーザー属性に合わせて、映画を3本推薦してください。
+	以下のユーザー属性に合わせて、映画を3本推薦し、さらに入力された「今の気分」の感情分析を行ってください。
 
 	ターゲット: %s型
 	心理機能: 主機能[%s], 補助機能[%s]
@@ -69,16 +69,19 @@ func (s *GeminiService) GetRecommendations(ctx context.Context, mbti string, moo
 
 	【出力ルール】
 	1. 感情論（泣ける等）ではなく、指定された心理機能がいかに刺激されるかを解説すること。
-	2. 出力は以下のJSON配列のみ。
+	2. 出力は以下のJSON配列のみ。ルートオブジェクトに "sentiment_score" と "movies" を含めてください。
 
-	[
+	{
+	"sentiment_score": -5から+5の整数 (入力された「今の気分」がどれくらいポジティブかネガティブか。-5が最悪、0が中立、+5が最高),
+	"movies": [
 	{
 	"title": "邦題",
-	"year": "公開年",
-    "reason_main": "%s（主機能）を刺激するポイント。なぜこの機能が納得・共鳴するのか。",
-    "reason_sub": "%s（補助機能）を刺激するポイント。なぜこの機能がワクワク・反応するのか。"
-	}
+      "year": "公開年",
+      "reason_main": "%s（主機能）を刺激するポイント",
+      "reason_sub": "%s（補助機能）を刺激するポイント"
+	  }
 	]
+	}
 	`, mbti, funcs.Main, funcs.Sub, mood, ignoreStr, funcs.Main, funcs.Sub)
 
 	fmt.Println("--- GEMINI PROMPT START ---")
@@ -87,31 +90,31 @@ func (s *GeminiService) GetRecommendations(ctx context.Context, mbti string, moo
 
 	resp, err := s.model.GenerateContent(ctx, genai.Text(prompt))
 	if err != nil {
-		return nil, err
+		return model.RecommendResponse{}, err
 	}
 
 	if len(resp.Candidates) == 0 || len(resp.Candidates[0].Content.Parts) == 0 {
-		return nil, fmt.Errorf("no response from gemini")
+		return model.RecommendResponse{}, fmt.Errorf("no response from gemini")
 	}
 
 	// JSONパース
-	var movies []model.MovieRecommendation
-
+	var response model.RecommendResponse
 	for _, part := range resp.Candidates[0].Content.Parts {
 		if txt, ok := part.(genai.Text); ok {
-			if err := json.Unmarshal([]byte(txt), &movies); err != nil {
-				return nil, fmt.Errorf("failed to parse json: %v", err)
+			if err := json.Unmarshal([]byte(txt), &response); err != nil {
+				return model.RecommendResponse{}, fmt.Errorf("failed to parse json: %v", err)
 			}
 			break
 		}
 	}
 
-	for i := range movies{
-		movies[i].LabelMain = fmt.Sprintf("%s（主機能）", funcs.Main)
-		movies[i].LabelSub = fmt.Sprintf("%s（補助機能）", funcs.Sub)
+	// ラベル付与
+	for i := range response.Movies {
+		response.Movies[i].LabelMain = fmt.Sprintf("%s (主機能)", funcs.Main)
+		response.Movies[i].LabelSub = fmt.Sprintf("%s (補助機能)", funcs.Sub)
 	}
 
-	return movies, nil
+	return response, nil
 }
 
 func (s *GeminiService) Close() {

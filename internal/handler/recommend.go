@@ -25,24 +25,22 @@ func (h *RecommendHandler) Recommend(c echo.Context) error {
 	}
 
 	// 1. Geminiから映画リスト(JSON)を取得
-	movies, err := h.Gemini.GetRecommendations(c.Request().Context(), req.MBTI, req.Mood, req.IgnoreMovies)
+	geminiResp, err := h.Gemini.GetRecommendations(c.Request().Context(), req.MBTI, req.Mood, req.IgnoreMovies)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
 	// 2. 各映画についてTMDBで画像を検索・付与
-	for i := range movies {
-		posterURL, providers := h.Tmdb.GetMovieMetadata(movies[i].Title)
+	for i := range geminiResp.Movies {
+		posterURL, providers := h.Tmdb.GetMovieMetadata(geminiResp.Movies[i].Title)
 
 		// 画像がない場合は適当なプレースホルダーを入れるか、空文字のままにする
 		if posterURL == "" {
 			posterURL = "https://placehold.co/500x750?text=No+Image"
 		}
-		movies[i].Poster = posterURL
-		movies[i].Providers = providers
+		geminiResp.Movies[i].Poster = posterURL
+		geminiResp.Movies[i].Providers = providers
 	}
 
-	return c.JSON(http.StatusOK, model.RecommendResponse{
-		Movies: movies,
-	})
+	return c.JSON(http.StatusOK, geminiResp)
 }
