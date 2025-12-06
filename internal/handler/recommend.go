@@ -25,7 +25,7 @@ func (h *RecommendHandler) Recommend(c echo.Context) error {
 	}
 
 	// 1. Geminiから映画リスト(JSON)を取得
-	movies, err := h.Gemini.GetRecommendations(c.Request().Context(), req.MBTI, req.Mood)
+	movies, err := h.Gemini.GetRecommendations(c.Request().Context(), req.MBTI, req.Mood, req.IgnoreMovies)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}

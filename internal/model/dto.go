@@ -1,8 +1,9 @@
 package model
 
 type RecommendRequest struct {
-	MBTI string `json:"mbti"`
-	Mood string `json:"mood"`
+	MBTI         string   `json:"mbti"`
+	Mood         string   `json:"mood"`
+	IgnoreMovies []string `json:"ignore_movies"`
 }
 
 // APIからのレスポンス
@@ -12,12 +13,14 @@ type RecommendResponse struct {
 
 // 映画1本分のデータ
 type MovieRecommendation struct {
-	Title     string     `json:"title"`
-	Year      string     `json:"year"`
-	ReasonTi  string     `json:"reason_ti"`
-	ReasonNe  string     `json:"reason_ne"`
-	Poster    string     `json:"poster"`
-	Providers []Provider `json:"providers"`
+	Title      string     `json:"title"`
+	Year       string     `json:"year"`
+	ReasonMain string     `json:"reason_main"`
+	ReasonSub  string     `json:"reason_sub"`
+	LabelMain  string     `json:"label_main"`
+	LabelSub   string     `json:"label_sub"`
+	Poster     string     `json:"poster"`
+	Providers  []Provider `json:"providers"`
 }
 
 // 配信サイトの情報

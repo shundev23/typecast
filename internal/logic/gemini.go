@@ -39,24 +39,51 @@ func NewGeminiService(ctx context.Context) (*GeminiService, error) {
 	}, nil
 }
 
-func (s *GeminiService) GetRecommendations(ctx context.Context, mbti string, mood string) ([]model.MovieRecommendation, error) {
+func (s *GeminiService) GetRecommendations(ctx context.Context, mbti string, mood string, ignoreMovies[]string) ([]model.MovieRecommendation, error) {
+	// 心理機能を取得
+	funcs := GetFunctions(mbti)
+	
+	// 除外リストの作成
+	ignoreStr := ""
+	if len(ignoreMovies) > 0{
+		for i, title := range ignoreMovies{
+			if i > 0{
+				ignoreStr += ", "
+			}
+			ignoreStr += title
+		}
+	}
+	
 	// JSONスキーマに合わせたプロンプト
 	prompt := fmt.Sprintf(`
-あなたは映画ソムリエです。以下の条件に合う映画を3本選出してください。
+	あなたはMBTIの専門家かつ映画ソムリエです。
+	以下のユーザー属性に合わせて、映画を3本推薦してください。
 
-ターゲット: %s型
-今の気分: %s
+	ターゲット: %s型
+	心理機能: 主機能[%s], 補助機能[%s]
+	今の気分: %s
 
-出力フォーマットは以下のJSON配列のみを返してください。Markdown記法は不要です。
-[
-  {
-    "title": "映画の邦題",
-    "year": "公開年",
-    "reason_ti": "Ti（内向的思考）を刺激するポイント（論理的整合性、構造美など）",
-    "reason_ne": "Ne（外向的直感）を刺激するポイント（可能性、概念の拡張など）"
-  }
-]
-`, mbti, mood)
+	【重要：除外リスト】
+	以下の映画は提案済みなので、今回は**絶対に**選ばないでください。
+	除外対象: [%s]
+
+	【出力ルール】
+	1. 感情論（泣ける等）ではなく、指定された心理機能がいかに刺激されるかを解説すること。
+	2. 出力は以下のJSON配列のみ。
+
+	[
+	{
+	"title": "邦題",
+	"year": "公開年",
+    "reason_main": "%s（主機能）を刺激するポイント。なぜこの機能が納得・共鳴するのか。",
+    "reason_sub": "%s（補助機能）を刺激するポイント。なぜこの機能がワクワク・反応するのか。"
+	}
+	]
+	`, mbti, funcs.Main, funcs.Sub, mood, ignoreStr, funcs.Main, funcs.Sub)
+
+	fmt.Println("--- GEMINI PROMPT START ---")
+	fmt.Println(prompt)
+	fmt.Println("--- GEMINI PROMPT END ---")
 
 	resp, err := s.model.GenerateContent(ctx, genai.Text(prompt))
 	if err != nil {
@@ -69,6 +96,7 @@ func (s *GeminiService) GetRecommendations(ctx context.Context, mbti string, moo
 
 	// JSONパース
 	var movies []model.MovieRecommendation
+
 	for _, part := range resp.Candidates[0].Content.Parts {
 		if txt, ok := part.(genai.Text); ok {
 			if err := json.Unmarshal([]byte(txt), &movies); err != nil {
@@ -76,6 +104,11 @@ func (s *GeminiService) GetRecommendations(ctx context.Context, mbti string, moo
 			}
 			break
 		}
+	}
+
+	for i := range movies{
+		movies[i].LabelMain = fmt.Sprintf("%s（主機能）", funcs.Main)
+		movies[i].LabelSub = fmt.Sprintf("%s（補助機能）", funcs.Sub)
 	}
 
 	return movies, nil
