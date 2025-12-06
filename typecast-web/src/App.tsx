@@ -296,6 +296,35 @@ function App() {
         </div>
       </div>
 
+      {movies.length > 0 && (
+        <div className="max-w-6xl mx-auto mb-8 flex justify-center">
+            <div className="bg-gray-900 border border-gray-700 rounded-lg p-4 px-8 flex items-center gap-6 shadow-lg animate-in fade-in slide-in-from-bottom-2">
+                <div className="text-center border-r border-gray-700 pr-6">
+                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Sentiment Score</p>
+                    <p className={`text-3xl font-bold ${
+                        // スコアによって色を変える
+                        (historyData[historyData.length - 1]?.score ?? 0) > 0 ? 'text-cyan-400' : 
+                        (historyData[historyData.length - 1]?.score ?? 0) < 0 ? 'text-red-400' : 'text-gray-200'
+                    }`}>
+                        {historyData[historyData.length - 1]?.score > 0 ? '+' : ''}
+                        {historyData[historyData.length - 1]?.score}
+                    </p>
+                </div>
+                <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Analysis</p>
+                    <p className="text-gray-300 text-sm font-medium">
+                        {/* スコアに応じたテキスト判定 */}
+                        {(historyData[historyData.length - 1]?.score ?? 0) >= 3 ? '非常にポジティブ・高揚状態' :
+                         (historyData[historyData.length - 1]?.score ?? 0) >= 1 ? 'ポジティブ・安定的' :
+                         (historyData[historyData.length - 1]?.score ?? 0) === 0 ? 'ニュートラル・平常心' :
+                         (historyData[historyData.length - 1]?.score ?? 0) >= -2 ? 'ネガティブ・疲労気味' :
+                         '非常にネガティブ・要休息'}
+                    </p>
+                </div>
+            </div>
+        </div>
+      )}
+
       {/* 結果表示エリア */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {movies.map((movie, idx) => (
