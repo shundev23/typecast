@@ -13,3 +13,6 @@ vendor/
 
 # Mac
 .DS_Store
+
+# サービスアカウント
+service-account.json

@@ -5,12 +5,15 @@ import (
 	"log"
 	"net/http"
 	"os"
+
 	"typecast/internal/handler"
 	"typecast/internal/logic"
+	"typecast/internal/middleware"
 
+	firebase "firebase.google.com/go/v4"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	echoMiddleware "github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
@@ -19,14 +22,16 @@ func main() {
 	}
 
 	e := echo.New()
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-
-	// CORS設定
-	e.Use(middleware.CORS())
+	e.Use(echoMiddleware.Logger())
+	e.Use(echoMiddleware.Recover())
+	e.Use(echoMiddleware.CORS())
 
 	// --- DI（依存性の注入）開始
 	ctx := context.Background()
+
+	// Firebase Admin SDKの初期化
+	var firebaseApp *firebase.App
+	var err error
 
 	// 1.Logicの初期化
 	geminiService, err := logic.NewGeminiService(ctx)
@@ -36,24 +41,32 @@ func main() {
 	defer geminiService.Close()
 
 	tmdbService := logic.NewTmdbService()
+	ogpService := logic.NewOgpService()
 
 	// 2.Handlerの初期化
 	h := &handler.RecommendHandler{
 		Gemini: geminiService,
 		Tmdb:   tmdbService,
 	}
+	ogpHandler := &handler.OgpHandler{Service: ogpService}
 
 	// ルーティング
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Typecast API is running!!!")
 	})
 
-	e.POST("/api/recommend", h.Recommend)
+	// OGP生成はTwitter等のBotが見に来るため認証なしにする
+	authMiddleware := middleware.AuthMiddleware(firebaseApp)
+	e.POST("/api/recommend", h.Recommend, authMiddleware)
+
+	e.GET("/api/ogp", ogpHandler.GenerateOgp)
 
 	// サーバー起動
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
+
+	log.Printf("Starting server on port %s...", port)
 	e.Logger.Fatal(e.Start(":" + port))
 }

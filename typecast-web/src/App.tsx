@@ -115,6 +115,12 @@ function App() {
 
   const handleRecommend = async () => {
     if (!mood) return;
+
+    if (!user) {
+        alert("ログインしてください");
+        return;
+    }
+
     setLoading(true);
     setMovies([]); // 前の結果をクリア
 
@@ -134,9 +140,16 @@ function App() {
 
     try {
       // APIリクエスト
+      // Firebaseから最新のIDトークンを取得
+      // forceRefresh: true にすると最新の状態を確実に取れるが、通常は false (引数なし) でOK
+      const token = await user.getIdToken();
+
       const res = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ mbti, mood, ignore_movies: ignoreMovies }),
       });
 
@@ -297,17 +310,27 @@ function App() {
              </div>
              <div className="col-span-2">
                <label className="block text-xs font-bold text-gray-500 mb-1">MOOD</label>
-               <input 
-                 type="text" 
+               <textarea
                  value={mood} 
                  onChange={(e) => setMood(e.target.value)} 
-                 placeholder="例: 知恵熱が出るような難解なやつ" 
-                 className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm focus:border-cyan-500 outline-none" 
-                 onKeyDown={(e) => e.key === 'Enter' && handleRecommend()} 
+                 placeholder="例: 仕事で理不尽なことがあってムシャクシャしてるから、とにかく派手にぶっ壊す映画が見たい。" 
+                 rows={3} // 3行分の高さを確保
+                 className="w-full bg-gray-800 border border-gray-700 rounded-xl p-4 text-lg focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all placeholder-gray-600 resize-none leading-relaxed"
+                 onKeyDown={(e) => {
+                    // Enterキーで送信 (Shift+Enterなら改行)
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleRecommend();
+                    }
+                 }}
                />
              </div>
           </div>
-          <button onClick={handleRecommend} disabled={loading || !mood} className="w-full bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-800 disabled:text-gray-500 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all">
+          <button 
+            onClick={handleRecommend} 
+            disabled={loading || !mood} 
+            className="w-full mt-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:from-gray-800 disabled:to-gray-800 disabled:text-gray-500 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-cyan-900/20"
+          >
             {loading ? <Loader2 className="animate-spin" /> : <Sparkles className="w-4 h-4" />}
             <span>Analyze & Recommend</span>
           </button>
