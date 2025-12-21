@@ -11,9 +11,30 @@ import (
 type RecommendHandler struct {
 	Gemini *logic.GeminiService
 	Tmdb   *logic.TmdbService
+	User   *logic.UserService
 }
 
 func (h *RecommendHandler) Recommend(c echo.Context) error {
+	// 1.ユーザーIDの取得
+	uid, ok := c.Get("uid").(string)
+	if !ok {
+		return  c.JSON(http.StatusUnauthorized, map[string]string{"error": "User ID not found"})
+	}
+
+	// 利用制限チェック(1日3回まで)
+	count, allowed, err := h.User.CheckAndIncrementLimit(c.Request().Context(), uid, 3)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to check limit"})
+	}
+	if !allowed{
+		// 制限オーバー時は 429 Too Many Requests を返す
+		return c.JSON(http.StatusTooManyRequests, map[string]interface{}{
+			"error": "Daily limit exceeded",
+			"limit": 3,
+			"count": count,
+		})
+	}
+
 
 	var req model.RecommendRequest
 	if err := c.Bind(&req); err != nil {

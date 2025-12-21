@@ -65,10 +65,17 @@ func main() {
 	}
 	defer historyService.Close()
 
+	userService, err := logic.NewUserService(ctx, firebaseApp)
+	if err != nil {
+		log.Fatal("Failed to crate User service:", err)
+	}
+	defer userService.Close()
+
 	// 2.Handlerの初期化
 	h := &handler.RecommendHandler{
 		Gemini: geminiService,
 		Tmdb:   tmdbService,
+		User: userService,
 	}
 	ogpHandler := &handler.OgpHandler{Service: ogpService}
 	historyHandler := &handler.HistoryHandler{Service: historyService}

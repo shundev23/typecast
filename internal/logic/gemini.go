@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"typecast/internal/model" // パッケージパスは環境に合わせて確認してください
+	"typecast/internal/model"
 
 	"github.com/google/generative-ai-go/genai"
 	"google.golang.org/api/option"
@@ -30,7 +30,7 @@ func NewGeminiService(ctx context.Context) (*GeminiService, error) {
 	// モデル設定
 	geminiModel := client.GenerativeModel("gemini-2.0-flash")
 
-	// ★重要: レスポンスをJSONに固定する設定
+	// レスポンスをJSONに固定する設定
 	geminiModel.ResponseMIMEType = "application/json"
 
 	return &GeminiService{
