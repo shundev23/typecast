@@ -14,6 +14,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
+	"google.golang.org/api/option"
 )
 
 func main() {
@@ -33,6 +34,21 @@ func main() {
 	var firebaseApp *firebase.App
 	var err error
 
+	// "service-account.json" があるか確認 (ローカル開発用)
+	if _, err := os.Stat("service-account.json"); err == nil {
+		opt := option.WithCredentialsFile("service-account.json")
+		firebaseApp, err = firebase.NewApp(ctx, nil, opt)
+		log.Println("Initialized Firebase App with local service account file.")
+	} else {
+		// ファイルがない場合はADC (Application Default Credentials) を使用 (Cloud Run用)
+		firebaseApp, err = firebase.NewApp(ctx, nil)
+		log.Println("Initialized Firebase App with ADC (Cloud Run).")
+	}
+
+	if err != nil {
+		log.Fatalf("error initializing firebase app: %v\n", err)
+	}
+
 	// 1.Logicの初期化
 	geminiService, err := logic.NewGeminiService(ctx)
 	if err != nil {
@@ -43,12 +59,19 @@ func main() {
 	tmdbService := logic.NewTmdbService()
 	ogpService := logic.NewOgpService()
 
+	historyService, err := logic.NewHistoryService(ctx, firebaseApp)
+	if err != nil{
+		log.Fatal("Failed to create History service:", err)
+	}
+	defer historyService.Close()
+
 	// 2.Handlerの初期化
 	h := &handler.RecommendHandler{
 		Gemini: geminiService,
 		Tmdb:   tmdbService,
 	}
 	ogpHandler := &handler.OgpHandler{Service: ogpService}
+	historyHandler := &handler.HistoryHandler{Service: historyService}
 
 	// ルーティング
 	e.GET("/", func(c echo.Context) error {
@@ -58,6 +81,9 @@ func main() {
 	// OGP生成はTwitter等のBotが見に来るため認証なしにする
 	authMiddleware := middleware.AuthMiddleware(firebaseApp)
 	e.POST("/api/recommend", h.Recommend, authMiddleware)
+
+	e.GET("/api/history", historyHandler.GetHistory, authMiddleware)
+	e.POST("/api/history", historyHandler.SaveHistory, authMiddleware)
 
 	e.GET("/api/ogp", ogpHandler.GenerateOgp)
 

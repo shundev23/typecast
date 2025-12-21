@@ -3,10 +3,8 @@ import { useState, useEffect } from 'react';
 import { Sparkles, Loader2, Brain, Lightbulb, LogIn, LogOut, User as UserIcon, Share2 } from 'lucide-react';
 // Firebase Auth (認証)
 import { signInWithPopup, signOut, onAuthStateChanged, type User } from 'firebase/auth';
-// Firestore (データベース)
-import { doc, setDoc, serverTimestamp, getDocs, collection } from 'firebase/firestore'; 
-// 設定ファイル
-import { auth, googleProvider, db } from './firebase';
+// Firestoreのimportを削除し、authのみ残す
+import { auth, googleProvider } from './firebase';
 // チャートコンポーネント
 import { MoodChart } from './components/MoodChart';
 
@@ -16,7 +14,7 @@ type Provider = {
   name: string;
   logo: string;
   link: string;
-}
+};
 
 type Movie = {
   title: string;
@@ -30,12 +28,13 @@ type Movie = {
 };
 
 type RecommendResponse = {
-  sentiment_score: number; // ★追加: 感情スコア
+  sentiment_score: number;
   movies: Movie[];
 };
 
-// ★追加: チャート表示用のデータ型
+// Backendのモデルに合わせて更新 (titleを追加)
 type HistoryItem = {
+  title: string; // 除外リスト生成に使用
   timestamp: Date;
   score: number;
   mood: string;
@@ -52,7 +51,7 @@ function App() {
   // チャート用データ
   const [historyData, setHistoryData] = useState<HistoryItem[]>([]);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/recommend';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
   // --- 1. ログイン状態の監視 ---
   useEffect(() => {
@@ -62,38 +61,48 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // --- 2. ログイン時に履歴データを取得 ---
+  // --- 2. ログイン時に履歴データをAPIから取得 ---
   useEffect(() => {
     if (!user) {
       setHistoryData([]);
       return;
     }
 
-    const fetchHistory = async () => {
+   const fetchHistory = async () => {
       try {
-        const historyRef = collection(db, 'users', user.uid, 'history');
-        const snapshot = await getDocs(historyRef);
-        const items: HistoryItem[] = [];
-        
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          // scoreデータがある場合のみチャートに追加
-          if (data.timestamp && typeof data.score === 'number') {
-            items.push({
-              timestamp: data.timestamp.toDate(),
-              score: data.score,
-              mood: data.mood || ''
-            });
-          }
+        const token = await user.getIdToken();
+        const res = await fetch(`${API_URL}/api/history`, {
+          headers: { 'Authorization': `Bearer ${token}` }
         });
-        setHistoryData(items);
+
+        if (res.ok) {
+          // APIのレスポンスデータの型に合わせる
+          type ApiHistoryItem = {
+            title: string;
+            score: number;
+            mood: string;
+            timestamp: string; // JSONなので日付は文字列
+          };
+
+          // 返ってきたJSONをApiHistoryItemの配列とみなして受け取る
+          const data = await res.json() as ApiHistoryItem[];
+          
+          const items = data.map((item) => ({
+            title: item.title,
+            score: item.score,
+            mood: item.mood,
+            timestamp: new Date(item.timestamp) // 文字列をDate型に変換
+          }));
+          
+          setHistoryData(items);
+        }
       } catch (error) {
         console.error("Failed to fetch history:", error);
       }
     };
 
     fetchHistory();
-  }, [user]);
+  }, [user, API_URL]);
 
   // --- ハンドラー関数 ---
 
@@ -122,29 +131,19 @@ function App() {
     }
 
     setLoading(true);
-    setMovies([]); // 前の結果をクリア
+    setMovies([]);
 
     console.log("--- Recommendation Started ---");
 
-    // 除外リスト(被り防止)の作成
-    let ignoreMovies: string[] = [];
-    if (user) {
-      try {
-        const historyRef = collection(db, 'users', user.uid, 'history');
-        const snapshot = await getDocs(historyRef);
-        ignoreMovies = snapshot.docs.map(doc => doc.data().title);
-      } catch (err) {
-        console.error("Failed to fetch history for ignore list:", err);
-      }
-    }
-
     try {
-      // APIリクエスト
-      // Firebaseから最新のIDトークンを取得
-      // forceRefresh: true にすると最新の状態を確実に取れるが、通常は false (引数なし) でOK
       const token = await user.getIdToken();
 
-      const res = await fetch(API_URL, {
+      // 除外リストはステート(historyData)から作成 (APIを叩く必要なし)
+      // これにより、Firestore読み取り回数を節約＆高速化
+      const ignoreMovies = historyData.map(item => item.title);
+
+      // レコメンドAPI実行
+      const res = await fetch(`${API_URL}/api/recommend`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -157,31 +156,39 @@ function App() {
       const data: RecommendResponse = await res.json();
       setMovies(data.movies);
 
-      // Firestoreへの保存 & チャート更新
-      if (user && data.movies.length > 0) {
-        const savePromises = data.movies.map((movie) => {
-          // タイトルの「/」を「：」に置換してエラーを防ぐ
-          const safeTitle = movie.title.replace(/\//g, '：');
-          const historyRef = doc(db, 'users', user.uid, 'history', safeTitle);
-          
-          return setDoc(historyRef, {
-            title: movie.title,
-            poster: movie.poster,
-            timestamp: serverTimestamp(),
-            // スコアと気分も保存
-            score: data.sentiment_score,
-            mood: mood
-          });
+      // API経由で履歴を保存
+      if (data.movies.length > 0) {
+        // Backendの SaveHistoryRequest に合わせたデータ構造
+        const historyPayload = {
+          movies: data.movies.map(m => ({
+             title: m.title,
+             poster: m.poster,
+             // timestampはBackend側で付けるので不要
+          })),
+          mood: mood,
+          score: data.sentiment_score
+        };
+
+        await fetch(`${API_URL}/api/history`, {
+           method: 'POST',
+           headers: {
+             'Content-Type': 'application/json',
+             'Authorization': `Bearer ${token}`
+           },
+           body: JSON.stringify(historyPayload)
         });
-        
-        await Promise.all(savePromises);
-        
-        // チャートを即時更新するためにstateにも追加
-        setHistoryData(prev => [...prev, {
-            timestamp: new Date(),
-            score: data.sentiment_score,
-            mood: mood
-        }]);
+
+        // チャート即時更新用（再フェッチせずにstateに追加）
+        setHistoryData(prev => [
+            // 新しい順に表示するなら先頭に追加するが、チャート用なら末尾に追加
+            ...prev, 
+            {
+                title: data.movies[0].title, // 代表で1つ、または本来は複数追加すべきだがチャート用ならscore重視でOK
+                timestamp: new Date(),
+                score: data.sentiment_score,
+                mood: mood
+            }
+        ]);
       }
 
     } catch (error) {
@@ -198,19 +205,11 @@ function App() {
 
     const latestScore = historyData[historyData.length - 1]?.score ?? 0;
     const scoreText = latestScore > 0 ? `+${latestScore}` : `${latestScore}`;
-    
-    // 映画タイトルをリスト化
     const movieList = movies.map(m => `・${m.title}`).join('\n');
-    
-    // 投稿テキストの作成
     const text = `🎬 TYPECAST Analysis Result\n\n👤 Type: ${mbti}\n🧠 Mood: "${mood}"\n📈 Sentiment: ${scoreText}\n\n🧪 Prescription:\n${movieList}\n\n#TYPECAST`;
-    
-    // URLエンコードしてTwitterの投稿画面を開く
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`;
+    const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`;
     window.open(url, '_blank');
   };
-
-  // --- JSX (画面描画) ---
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 p-8 font-sans">
