@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 	"typecast/internal/logic"
 	"typecast/internal/model"
@@ -22,6 +23,7 @@ func (h *HistoryHandler) GetHistory(c echo.Context) error {
 
 	history, err := h.Service.GetHistory(c.Request().Context(), uid)
 	if err != nil {
+		log.Printf("Failed to fetch history for user %s: %v", uid, err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to fetch history"})
 	}
 
@@ -41,6 +43,7 @@ func (h *HistoryHandler) SaveHistory(c echo.Context) error {
 	}
 
 	if err := h.Service.SaveHistory(c.Request().Context(), uid, req); err != nil {
+		log.Printf("Failed to save history for user %s: %v", uid, err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to save history"})
 	}
 
