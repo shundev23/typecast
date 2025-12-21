@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 	"typecast/internal/logic"
 	"typecast/internal/model"
@@ -24,6 +25,7 @@ func (h *RecommendHandler) Recommend(c echo.Context) error {
 	// 利用制限チェック(1日3回まで)
 	count, allowed, err := h.User.CheckAndIncrementLimit(c.Request().Context(), uid, 3)
 	if err != nil {
+		log.Printf("Error checking limit for user %s: %v", uid, err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to check limit"})
 	}
 	if !allowed{
