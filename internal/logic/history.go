@@ -7,8 +7,8 @@ import (
 	"typecast/internal/model"
 
 	"cloud.google.com/go/firestore"
-	firebase "firebase.google.com/go/v4"
 	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
 )
 
 type HistoryService struct {
@@ -16,8 +16,8 @@ type HistoryService struct {
 }
 
 // NewHistoryService : Firestoreクライアントを初期化
-func NewHistoryService(ctx context.Context, app *firebase.App) (*HistoryService, error) {
-	client, err := app.Firestore(ctx)
+func NewHistoryService(ctx context.Context, projectID string, dbName string, opts ...option.ClientOption) (*HistoryService, error) {
+	client, err := firestore.NewClientWithDatabase(ctx, projectID, dbName, opts...)
 	if err != nil {
 		return nil, err
 	}

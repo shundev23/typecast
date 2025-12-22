@@ -7,15 +7,15 @@ import (
 	"typecast/internal/model"
 
 	"cloud.google.com/go/firestore"
-	firebase "firebase.google.com/go/v4"
+	"google.golang.org/api/option"
 )
 
 type UserService struct {
 	Client *firestore.Client
 }
 
-func NewUserService(ctx context.Context, app *firebase.App) (*UserService, error) {
-	client, err := app.Firestore(ctx)
+func NewUserService(ctx context.Context, projectID string, dbName string, opts ...option.ClientOption) (*UserService, error) {
+	client, err := firestore.NewClientWithDatabase(ctx, projectID, dbName, opts...)
 	if err != nil {
 		return nil, err
 	}

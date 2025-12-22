@@ -34,23 +34,26 @@ func main() {
 	var firebaseApp *firebase.App
 	var err error
 
-	// "service-account.json" があるか確認 (ローカル開発用)
+	// Firestore接続オプション
+	var firestoreOpts []option.ClientOption
 	if _, err := os.Stat("service-account.json"); err == nil {
-		opt := option.WithCredentialsFile("service-account.json")
-		firebaseApp, err = firebase.NewApp(ctx, nil, opt)
-		log.Println("Initialized Firebase App with local service account file.")
-	} else {
-		// ファイルがない場合はADC (Application Default Credentials) を使用 (Cloud Run用)
-		projectID := os.Getenv("VITE_FIREBASE_PROJECT_ID")
-		if projectID == ""{
-			// 設定忘れはFatalで落とす、もしくはログで警告
-			log.Fatal("Error: FIREBASE_PROJECT_ID environment variable is not set.")
-		}
-
-		conf := &firebase.Config{ProjectID: projectID}
-		firebaseApp, err = firebase.NewApp(ctx, conf)
-		log.Println("Initialized Firebase App with ADC and Project ID:", projectID)
+		firestoreOpts = append(firestoreOpts, option.WithCredentialsFile("service-account.json"))
 	}
+
+	projectID := os.Getenv("VITE_FIREBASE_PROJECT_ID")
+	if projectID == ""{
+		// 設定忘れはFatalで落とす、もしくはログで警告
+		log.Fatal("Error: FIREBASE_PROJECT_ID environment variable is not set.")
+	}
+
+	databaseID := os.Getenv("FIRESTORE_DB_NAME")
+	if databaseID == ""{
+		log.Fatal("Error: FIRESTORE_DB_NAME is not set")
+	}
+
+	conf := &firebase.Config{ProjectID: projectID}
+	firebaseApp, err = firebase.NewApp(ctx, conf)
+	log.Println("Initialized Firebase App with ADC and Project ID:", projectID)
 
 	if err != nil {
 		log.Fatalf("error initializing firebase app: %v\n", err)
@@ -66,13 +69,13 @@ func main() {
 	tmdbService := logic.NewTmdbService()
 	ogpService := logic.NewOgpService()
 
-	historyService, err := logic.NewHistoryService(ctx, firebaseApp)
+	historyService, err := logic.NewHistoryService(ctx, projectID, databaseID, firestoreOpts...)
 	if err != nil{
 		log.Fatal("Failed to create History service:", err)
 	}
 	defer historyService.Close()
 
-	userService, err := logic.NewUserService(ctx, firebaseApp)
+	userService, err := logic.NewUserService(ctx, projectID, databaseID, firestoreOpts...)
 	if err != nil {
 		log.Fatal("Failed to crate User service:", err)
 	}
