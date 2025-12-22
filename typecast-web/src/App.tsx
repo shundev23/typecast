@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 // アイコン
-import { Sparkles, Loader2, Brain, Lightbulb, LogIn, LogOut, User as UserIcon, Share2 } from 'lucide-react';
+import { Sparkles, Loader2, Brain, Lightbulb, LogIn, LogOut, User as UserIcon, Share2, Ban, X } from 'lucide-react';
 // Firebase Auth (認証)
 import { signInWithPopup, signOut, onAuthStateChanged, type User } from 'firebase/auth';
 // Firestoreのimportを削除し、authのみ残す
@@ -47,6 +47,7 @@ function App() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [showLimitModal, setShowLimitModal] = useState(false);
   
   // チャート用データ
   const [historyData, setHistoryData] = useState<HistoryItem[]>([]);
@@ -133,6 +134,8 @@ function App() {
     setLoading(true);
     setMovies([]);
 
+    setShowLimitModal(false);
+
     console.log("--- Recommendation Started ---");
 
     try {
@@ -151,6 +154,12 @@ function App() {
         },
         body: JSON.stringify({ mbti, mood, ignore_movies: ignoreMovies }),
       });
+
+      if (res.status === 429) {
+        setShowLimitModal(true); // モーダルを開く
+        setLoading(false);
+        return; 
+      }
 
       if (!res.ok) throw new Error('Network response was not ok');
       const data: RecommendResponse = await res.json();
@@ -418,6 +427,59 @@ function App() {
           </div>
         ))}
       </div>
+      {showLimitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          {/* 背景のぼかしフィルター */}
+          <div 
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
+            onClick={() => setShowLimitModal(false)}
+          />
+          
+          {/* モーダル本体 */}
+          <div className="relative bg-gray-900 border border-red-500/30 rounded-2xl p-8 max-w-md w-full shadow-[0_0_50px_rgba(239,68,68,0.2)] animate-in zoom-in-95 duration-300">
+            {/* 閉じるボタン */}
+            <button 
+              onClick={() => setShowLimitModal(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            <div className="flex flex-col items-center text-center space-y-4">
+              {/* アイコン */}
+              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center border border-red-500/20 mb-2">
+                <Ban className="w-8 h-8 text-red-500" />
+              </div>
+
+              {/* タイトル */}
+              <div>
+                <h2 className="text-2xl font-bold text-white tracking-wider mb-1">SYSTEM COOLDOWN</h2>
+                <p className="text-red-400 text-xs font-mono uppercase tracking-widest">Daily Limit Reached (3/3)</p>
+              </div>
+
+              {/* メッセージ本文 */}
+              <div className="bg-gray-950/50 rounded-lg p-4 border border-gray-800 text-left w-full">
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  本日の分析リソース上限に達しました。
+                  <br />
+                  過度な情報の摂取は、決定麻痺（Analysis Paralysis）を引き起こす可能性があります。
+                </p>
+                <div className="mt-3 pt-3 border-t border-gray-800 text-xs text-gray-500 font-mono">
+                  &gt; Next session available: <span className="text-cyan-400">Tomorrow 00:00 JST</span>
+                </div>
+              </div>
+
+              {/* アクションボタン */}
+              <button
+                onClick={() => setShowLimitModal(false)}
+                className="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 rounded-xl border border-gray-700 transition-all mt-2"
+              >
+                Acknowledge
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
