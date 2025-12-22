@@ -41,8 +41,15 @@ func main() {
 		log.Println("Initialized Firebase App with local service account file.")
 	} else {
 		// ファイルがない場合はADC (Application Default Credentials) を使用 (Cloud Run用)
-		firebaseApp, err = firebase.NewApp(ctx, nil)
-		log.Println("Initialized Firebase App with ADC (Cloud Run).")
+		projectID := os.Getenv("VITE_FIREBASE_PROJECT_ID")
+		if projectID == ""{
+			// 設定忘れはFatalで落とす、もしくはログで警告
+			log.Fatal("Error: FIREBASE_PROJECT_ID environment variable is not set.")
+		}
+
+		conf := &firebase.Config{ProjectID: projectID}
+		firebaseApp, err = firebase.NewApp(ctx, conf)
+		log.Println("Initialized Firebase App with ADC and Project ID:", projectID)
 	}
 
 	if err != nil {
