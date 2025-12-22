@@ -76,7 +76,7 @@ func (s *UserService) CheckAndIncrementLimit(ctx context.Context, uid string, li
 		usage.LastReset = time.Now() // 更新時刻
 		currentCount = usage.Count
 		
-		return tx.Set(docRef, usage, firestore.MergeAll)
+		return tx.Set(docRef, usage)
 	})
 
 	if err != nil {
