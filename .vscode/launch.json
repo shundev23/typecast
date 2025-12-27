@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Server",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/api/main.go",
+            "env": {
+                "VITE_FIREBASE_PROJECT_ID": "gen-lang-client-0402880164",
+                "VITE_FIRESTORE_DB_NAME": "typecast-db",
+                "GEMINI_API_KEY": "AIzaSyBH_FseG2sZjDJxbMmj9fUg87gVEcQJycE",
+                "TMDB_API_KEY": "cf8d7f5d0b38c405a5221c401881fed7"
+            }
+        }
+    ]
+}

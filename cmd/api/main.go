@@ -18,6 +18,7 @@ import (
 )
 
 func main() {
+	godotenv.Load()
 	if err := godotenv.Load(); err != nil {
 		log.Println("Info: .env file not found. Using system environment variables.")
 	}
@@ -68,6 +69,11 @@ func main() {
 
 	tmdbService := logic.NewTmdbService()
 	ogpService := logic.NewOgpService()
+	shareService, err := logic.NewShareService(ctx, projectID, databaseID, firestoreOpts...)
+	if err != nil {
+		log.Fatal("Failed to create Share service:", err)
+	}
+	defer shareService.Close()
 
 	historyService, err := logic.NewHistoryService(ctx, projectID, databaseID, firestoreOpts...)
 	if err != nil{
@@ -87,8 +93,10 @@ func main() {
 		Tmdb:   tmdbService,
 		User: userService,
 	}
-	ogpHandler := &handler.OgpHandler{Service: ogpService}
+
+	ogpHandler := handler.NewOgpHandler(ogpService)
 	historyHandler := &handler.HistoryHandler{Service: historyService}
+	shareHandler := handler.NewShareHandler(shareService)
 
 	// ルーティング
 	e.GET("/", func(c echo.Context) error {
@@ -102,7 +110,10 @@ func main() {
 	e.GET("/api/history", historyHandler.GetHistory, authMiddleware)
 	e.POST("/api/history", historyHandler.SaveHistory, authMiddleware)
 
-	e.GET("/api/ogp", ogpHandler.GenerateOgp)
+	e.GET("/api/ogp", ogpHandler.GetOgpImage)
+	e.POST("/api/share", shareHandler.Create)
+
+	e.GET("/s/:id", shareHandler.HandleShareLink)
 
 	// サーバー起動
 	port := os.Getenv("PORT")

@@ -209,15 +209,43 @@ function App() {
   };
 
   // シェア機能の実装
-  const handleShare = () => {
+  const handleShare = async () => {
     if (movies.length === 0) return;
-
+    
+    // 直近の結果を取得
+    const movie = movies[0]; // 先頭の映画をタイトルにする
     const latestScore = historyData[historyData.length - 1]?.score ?? 0;
-    const scoreText = latestScore > 0 ? `+${latestScore}` : `${latestScore}`;
-    const movieList = movies.map(m => `・${m.title}`).join('\n');
-    const text = `🎬 TYPECAST Analysis Result\n\n👤 Type: ${mbti}\n🧠 Mood: "${mood}"\n📈 Sentiment: ${scoreText}\n\n🧪 Prescription:\n${movieList}\n\n#TYPECAST`;
-    const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`;
-    window.open(url, '_blank');
+    
+    try {      
+      const res = await fetch(`${API_URL}/api/share`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: movie.title,
+          mood: mood,
+          score: latestScore
+        }),
+      });
+
+      if (!res.ok) throw new Error("Share failed");
+
+      const data = await res.json();
+      const shareUrl = data.share_url; // http://localhost:8080/s/xxxx
+
+      // 2. Xの投稿画面を開く
+      // ユーザーに見せるURLは、今作った短縮URL (shareUrl) にする
+      const text = `🎬 TYPECAST Analysis Result\n\n👤 Type: ${mbti}\n🧠 Mood: "${mood}"\n\n#TYPECAST`;
+      const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
+      console.log("Opening X share URL:", xUrl);
+      
+      window.open(xUrl, '_blank');
+
+    } catch (error) {
+      console.error("Share Error:", error);
+      alert("シェアリンクの作成に失敗しました。");
+    }
   };
 
   return (

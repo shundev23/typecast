@@ -59,4 +59,4 @@ jobs:
             --region ${{ env.REGION }} \
             --platform managed \
             --allow-unauthenticated \
-            --set-env-vars GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},TMDB_API_KEY=${{ secrets.TMDB_API_KEY }},VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }},FIRESTORE_DB_NAME=${{ secrets.FIRESTORE_DB_NAME }}
+            --set-env-vars GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},TMDB_API_KEY=${{ secrets.TMDB_API_KEY }},VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }},FIRESTORE_DB_NAME=${{ secrets.FIRESTORE_DB_NAME }},FRONTEND_URL=${{ secrets.PROD_FRONTEND_URL }},API_BASE_URL=${{ secrets.PROD_API_BASE_URL }}

@@ -28,6 +28,9 @@ RUN apk --no-cache add ca-certificates tzdata
 # Builderステージからバイナリだけをコピー
 COPY --from=builder /app/main .
 
+# assetsフォルダ (フォントなど) をコンテナにコピーする
+COPY --from=builder /app/assets ./assets
+
 # ポート公開（Cloud Runはデフォルト8080）
 EXPOSE 8080
 

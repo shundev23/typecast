@@ -1,9 +1,8 @@
 package handler
 
 import (
-	"image/png"
+	"net/http"
 	"strconv"
-	"strings"
 	"typecast/internal/logic"
 
 	"github.com/labstack/echo/v4"
@@ -13,16 +12,29 @@ type OgpHandler struct {
 	Service *logic.OgpService
 }
 
-func (h *OgpHandler) GenerateOgp(c echo.Context) error {
-	score, _ := strconv.Atoi(c.QueryParam("score"))
-	titles := strings.Split(c.QueryParam("titles"), ",")
-	posters := strings.Split(c.QueryParam("posters"), ",")
+func NewOgpHandler(service *logic.OgpService) *OgpHandler {
+	return &OgpHandler{Service: service}
+}
 
-	img, err := h.Service.GenerateImage(score, titles, posters)
+// GET /api/ogp?title=Matrix&mood=Excited&score=5
+func (h *OgpHandler) GetOgpImage(c echo.Context) error {
+	title := c.QueryParam("title")
+	mood := c.QueryParam("mood")
+	scoreStr := c.QueryParam("score")
+
+	// デフォルト値
+	if title == "" {
+		title = "TYPECAST"
+	}
+	// エラーハンドリング省略（0になるだけなのでOK）
+	score, _ := strconv.Atoi(scoreStr)
+
+	// 画像生成
+	imgBytes, err := h.Service.GenerateImage(title, mood, score)
 	if err != nil {
-		return c.String(500, "Failed to generate image")
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate image"})
 	}
 
-	c.Response().Header().Set(echo.HeaderContentType, "image/png")
-	return png.Encode(c.Response().Writer, img)
+	// バイナリデータを "image/png" として返す
+	return c.Blob(http.StatusOK, "image/png", imgBytes)
 }
