@@ -508,6 +508,13 @@ function App() {
           </div>
         </div>
       )}
+      <footer className="max-w-6xl mx-auto mt-12 pb-8 text-center text-gray-500 text-xs">
+        <p>&copy; 2025 TYPECAST. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+        <div className="mt-2 space-x-4">
+          <a href="/terms.html" target="_blank" className="hover:text-cyan-400 transition-colors">Terms & Privacy</a>
+          <a href="https://x.com/1_q_j" target="_blank" className="hover:text-cyan-400 transition-colors">Contact</a>
+         </div>
+      </footer>
     </div>
   );
 }
