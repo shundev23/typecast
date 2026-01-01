@@ -1,0 +1,27 @@
+import { apiClient } from '../lib/apiClient';
+import type { HistoryItem, ApiHistoryItem, SaveHistoryRequest } from '../types';
+
+export const historyService = {
+  // 履歴を取得し、Date型に変換して返す
+  fetchAll: async (token: string): Promise<HistoryItem[]> => {
+    const data = await apiClient<ApiHistoryItem[]>('/api/history', {
+      method: 'GET',
+      token,
+    });
+
+    // 変換処理 (DTO -> Domain Model)
+    return data.map((item) => ({
+      ...item,
+      timestamp: new Date(item.timestamp),
+    }));
+  },
+
+  // 履歴を保存
+  save: async (payload: SaveHistoryRequest, token: string) => {
+    return apiClient('/api/history', {
+      method: 'POST',
+      body: payload,
+      token,
+    });
+  }
+};

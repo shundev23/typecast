@@ -6,7 +6,6 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/google/uuid"
-	"google.golang.org/api/option"
 )
 
 type ShareData struct {
@@ -21,19 +20,9 @@ type ShareService struct {
 	Client *firestore.Client
 }
 
-func NewShareService(ctx context.Context, projectID string, dbName string, opts ...option.ClientOption) (*ShareService, error) {
-	client, err := firestore.NewClientWithDatabase(ctx, projectID, dbName, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &ShareService{Client: client}, nil
-}
-
-// Close : クライアントを閉じる
-func (s *ShareService) Close() {
-	if s.Client != nil {
-		s.Client.Close()
-	}
+// NewShareService : main.goで作られたclientを受け取る形に変更
+func NewShareService(client *firestore.Client) *ShareService {
+	return &ShareService{Client: client}
 }
 
 // CreateShare : シェアデータを保存し、IDを返す

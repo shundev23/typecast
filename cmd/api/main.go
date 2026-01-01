@@ -18,7 +18,6 @@ import (
 )
 
 func main() {
-	godotenv.Load()
 	if err := godotenv.Load(); err != nil {
 		log.Println("Info: .env file not found. Using system environment variables.")
 	}
@@ -31,7 +30,7 @@ func main() {
 	// --- DI（依存性の注入）開始
 	ctx := context.Background()
 
-	// Firebase Admin SDKの初期化
+	// Firebase Firestoreの初期化
 	var firebaseApp *firebase.App
 	var err error
 
@@ -53,14 +52,21 @@ func main() {
 	}
 
 	conf := &firebase.Config{ProjectID: projectID}
-	firebaseApp, err = firebase.NewApp(ctx, conf)
-	log.Println("Initialized Firebase App with ADC and Project ID:", projectID)
 
+	firebaseApp, err = firebase.NewApp(ctx, conf, firestoreOpts...)
+	log.Println("Initialized Firebase App with ADC and Project ID:", projectID)
 	if err != nil {
 		log.Fatalf("error initializing firebase app: %v\n", err)
 	}
 
-	// 1.Logicの初期化
+	// Firestore Clientを初期化して、後続で使いまわす
+	client, err := firebaseApp.Firestore(ctx)
+	if err != nil {
+		log.Fatalf("error initializing firestore client: %v\n", err)
+	}
+	defer client.Close()
+
+	// Logicの初期化
 	geminiService, err := logic.NewGeminiService(ctx)
 	if err != nil {
 		log.Fatal("Failed to create Gemini service:", err)
@@ -69,11 +75,12 @@ func main() {
 
 	tmdbService := logic.NewTmdbService()
 	ogpService := logic.NewOgpService()
-	shareService, err := logic.NewShareService(ctx, projectID, databaseID, firestoreOpts...)
+	shareService := logic.NewShareService(client)
+	feedbackService := logic.NewFeedbackService(client)
+	
 	if err != nil {
 		log.Fatal("Failed to create Share service:", err)
 	}
-	defer shareService.Close()
 
 	historyService, err := logic.NewHistoryService(ctx, projectID, databaseID, firestoreOpts...)
 	if err != nil{
@@ -97,6 +104,7 @@ func main() {
 	ogpHandler := handler.NewOgpHandler(ogpService)
 	historyHandler := &handler.HistoryHandler{Service: historyService}
 	shareHandler := handler.NewShareHandler(shareService)
+	feedbackHandler := handler.NewFeedbackHandler(feedbackService)
 
 	// ルーティング
 	e.GET("/", func(c echo.Context) error {
@@ -105,15 +113,20 @@ func main() {
 
 	// OGP生成はTwitter等のBotが見に来るため認証なしにする
 	authMiddleware := middleware.AuthMiddleware(firebaseApp)
+
 	e.POST("/api/recommend", h.Recommend, authMiddleware)
 
 	e.GET("/api/history", historyHandler.GetHistory, authMiddleware)
 	e.POST("/api/history", historyHandler.SaveHistory, authMiddleware)
 
 	e.GET("/api/ogp", ogpHandler.GetOgpImage)
+	
 	e.POST("/api/share", shareHandler.Create)
 
 	e.GET("/s/:id", shareHandler.HandleShareLink)
+
+	e.POST("/api/feedback", feedbackHandler.Save, authMiddleware)
+	e.GET("/api/feedback", feedbackHandler.GetAll, authMiddleware)
 
 	// サーバー起動
 	port := os.Getenv("PORT")
