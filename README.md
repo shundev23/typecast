@@ -141,3 +141,5 @@ TYPECASTは、MBTIの心理機能（Ti, Ne, Ni, Te など）を刺激するか�
 ### ライセンス
 
 MIT License
+
+
