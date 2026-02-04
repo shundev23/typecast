@@ -18,8 +18,8 @@ env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   ARTIFACT_REGION: asia-northeast2  # イメージ: Artifact Registry（大阪）
   REGION: asia-northeast1            # Cloud Run デプロイ先（東京）
-  REPO_NAME: typecast-repo-osaka
-  SERVICE_NAME: typecast-api-v2   # 復元後のゾンビ競合回避のため v2 で新規サービスとしてデプロイ
+  REPO_NAME: typecast-repo
+  SERVICE_NAME: typecast-api
 
 jobs:
   deploy:

@@ -1,7 +1,5 @@
 {
   "projects": {
     "default": "typecast-v2"
-  },
-  "targets": {},
-  "etags": {}
+  }
 }

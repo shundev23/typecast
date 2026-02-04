@@ -113,7 +113,7 @@ TYPECASTは、MBTIの心理機能（Ti, Ne, Ni, Te など）を刺激するか�
      PORT=8080
      GEMINI_API_KEY=your_gemini_key
      TMDB_API_KEY=your_tmdb_key
-     VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
+     VITE_FIREBASE_PROJECT_ID=typecast-v2
      FIRESTORE_DB_NAME=(default)
      ```
    - Firestore 用に `service-account.json` を配置（ローカル時）。
