@@ -17,6 +17,9 @@ vendor/
 # Cursor
 .cursorrules
 
+# 内部ドキュメント（公開リポジトリに含めない）
+docs/
+
 # ログ（誤コミット防止）
 debug.log
 

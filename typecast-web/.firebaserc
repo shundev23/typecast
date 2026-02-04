@@ -1,6 +1,6 @@
 {
   "projects": {
-    "default": "gen-lang-client-0402880164"
+    "default": "your-firebase-project-id"
   },
   "targets": {},
   "etags": {}
