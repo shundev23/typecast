@@ -41,13 +41,13 @@ func main() {
 	}
 
 	projectID := os.Getenv("VITE_FIREBASE_PROJECT_ID")
-	if projectID == ""{
+	if projectID == "" {
 		// 設定忘れはFatalで落とす、もしくはログで警告
 		log.Fatal("Error: FIREBASE_PROJECT_ID environment variable is not set.")
 	}
 
 	databaseID := os.Getenv("FIRESTORE_DB_NAME")
-	if databaseID == ""{
+	if databaseID == "" {
 		log.Fatal("Error: FIRESTORE_DB_NAME is not set")
 	}
 
@@ -77,13 +77,13 @@ func main() {
 	ogpService := logic.NewOgpService()
 	shareService := logic.NewShareService(client)
 	feedbackService := logic.NewFeedbackService(client)
-	
+
 	if err != nil {
 		log.Fatal("Failed to create Share service:", err)
 	}
 
 	historyService, err := logic.NewHistoryService(ctx, projectID, databaseID, firestoreOpts...)
-	if err != nil{
+	if err != nil {
 		log.Fatal("Failed to create History service:", err)
 	}
 	defer historyService.Close()
@@ -98,7 +98,7 @@ func main() {
 	h := &handler.RecommendHandler{
 		Gemini: geminiService,
 		Tmdb:   tmdbService,
-		User: userService,
+		User:   userService,
 	}
 
 	ogpHandler := handler.NewOgpHandler(ogpService)
@@ -120,7 +120,7 @@ func main() {
 	e.POST("/api/history", historyHandler.SaveHistory, authMiddleware)
 
 	e.GET("/api/ogp", ogpHandler.GetOgpImage)
-	
+
 	e.POST("/api/share", shareHandler.Create)
 
 	e.GET("/s/:id", shareHandler.HandleShareLink)
@@ -134,6 +134,5 @@ func main() {
 		port = "8080"
 	}
 
-	log.Printf("Starting server on port %s...", port)
 	e.Logger.Fatal(e.Start(":" + port))
 }
