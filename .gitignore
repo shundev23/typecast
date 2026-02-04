@@ -14,5 +14,8 @@ vendor/
 # Mac
 .DS_Store
 
+# ログ（誤コミット防止）
+debug.log
+
 # サービスアカウント
 service-account.json
