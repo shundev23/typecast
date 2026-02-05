@@ -1,3 +1,4 @@
+// 本番: GitHub Secrets の VITE_API_URL = https://typecast-api-220731639324.asia-northeast1.run.app
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 // カスタムエラークラスの定義

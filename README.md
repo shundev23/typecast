@@ -128,10 +128,14 @@ TYPECASTは、MBTIの心理機能（Ti, Ne, Ni, Te など）を刺激するか�
      cd typecast-web
      ```
    - Firebase 設定を `src/firebase.ts` に記載（または .env から読み込み）。
-   - `.env` に API のベースURL を設定:
+   - `.env` に API のベースURL を設定（ローカルは localhost、本番は Cloud Run URL）:
      ```bash
+     # ローカル開発時
      VITE_API_URL=http://localhost:8080
+     # 本番ビルド時（CI では GitHub Secrets の VITE_API_URL を使用）
+     # VITE_API_URL=https://typecast-api-220731639324.asia-northeast1.run.app
      ```
+   - **本番デプロイ**: GitHub Secrets の `VITE_API_URL` を `https://typecast-api-220731639324.asia-northeast1.run.app` に設定すると、フロントのビルドでこの API に接続します。
    - 起動:
      ```bash
      npm install
