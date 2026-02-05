@@ -115,6 +115,8 @@ TYPECASTは、MBTIの心理機能（Ti, Ne, Ni, Te など）を刺激するか�
      TMDB_API_KEY=your_tmdb_key
      VITE_FIREBASE_PROJECT_ID=typecast-v2
      FIRESTORE_DB_NAME=(default)
+     # 必須: プロンプトテンプレート（リポジトリには含めず .env または本番は Secret で保持）
+     # GEMINI_PROMPT_TEMPLATE=改行は \n で表現。プレースホルダ %s は mbti, Main, Sub, mood, ignoreStr, Main, Sub の順
      ```
    - Firestore 用に `service-account.json` を配置（ローカル時）。
    - 起動:
@@ -136,6 +138,7 @@ TYPECASTは、MBTIの心理機能（Ti, Ne, Ni, Te など）を刺激するか�
      # VITE_API_URL=https://typecast-api-220731639324.asia-northeast1.run.app
      ```
    - **本番デプロイ**: GitHub Secrets の `VITE_API_URL` を `https://typecast-api-220731639324.asia-northeast1.run.app` に設定すると、フロントのビルドでこの API に接続します。
+   - **プロンプト**: 環境変数 `GEMINI_PROMPT_TEMPLATE` で指定（必須）。リポジトリには持たず、.env または本番は Cloud Run / Secret Manager で設定。改行は `\n`。
    - 起動:
      ```bash
      npm install

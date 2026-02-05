@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
+	"strings"
 	"typecast/internal/model"
 
 	"github.com/google/generative-ai-go/genai"
@@ -45,56 +47,38 @@ func (s *GeminiService) GetRecommendations(ctx context.Context, mbti string, moo
 	
 	// 除外リストの作成
 	ignoreStr := ""
-	if len(ignoreMovies) > 0{
-		for i, title := range ignoreMovies{
-			if i > 0{
+	if len(ignoreMovies) > 0 {
+		for i, title := range ignoreMovies {
+			if i > 0 {
 				ignoreStr += ", "
 			}
 			ignoreStr += title
 		}
 	}
-	
-	// JSONスキーマに合わせたプロンプト
-	prompt := fmt.Sprintf(`
-	あなたはMBTIの専門家かつ映画ソムリエです。
-	以下のユーザー属性に合わせて、映画を3本推薦し、さらに入力された「今の気分」の感情分析を行ってください。
 
-	ターゲット: %s型
-	心理機能: 主機能[%s], 補助機能[%s]
-	今の気分: %s
-
-	【重要：除外リスト】
-	以下の映画は提案済みなので、今回は**絶対に**選ばないでください。
-	除外対象: [%s]
-
-	【出力ルール】
-	1. 感情論（泣ける等）ではなく、指定された心理機能がいかに刺激されるかを解説すること。
-	2. 出力は以下のJSON配列のみ。ルートオブジェクトに "sentiment_score" と "movies" を含めてください。
-
-	{
-	"sentiment_score": -5から+5の整数 (入力された「今の気分」がどれくらいポジティブかネガティブか。-5が最悪、0が中立、+5が最高),
-	"movies": [
-	{
-	"title": "邦題",
-      "year": "公開年",
-      "reason_main": "%s（主機能）を刺激するポイント",
-      "reason_sub": "%s（補助機能）を刺激するポイント"
-	  }
-	]
+	// プロンプトは設定（環境変数）でのみ保持。リポジトリには含めない。
+	// プレースホルダ順: mbti, Main, Sub, mood, ignoreStr, Main, Sub。改行は \n で渡す。
+	template := os.Getenv("GEMINI_PROMPT_TEMPLATE")
+	if template == "" {
+		return model.RecommendResponse{}, fmt.Errorf("GEMINI_PROMPT_TEMPLATE is not set")
 	}
-	`, mbti, funcs.Main, funcs.Sub, mood, ignoreStr, funcs.Main, funcs.Sub)
+	template = strings.ReplaceAll(template, "\\n", "\n")
+	prompt := fmt.Sprintf(template, mbti, funcs.Main, funcs.Sub, mood, ignoreStr, funcs.Main, funcs.Sub)
 
-	fmt.Println("--- GEMINI PROMPT START ---")
-	fmt.Println(prompt)
-	fmt.Println("--- GEMINI PROMPT END ---")
-
+	log.Printf("[Gemini] generate_content mbti=%s", mbti)
 	resp, err := s.model.GenerateContent(ctx, genai.Text(prompt))
 	if err != nil {
+		log.Printf("[Gemini] error=api_failed err=%v", err)
 		return model.RecommendResponse{}, err
 	}
 
-	if len(resp.Candidates) == 0 || len(resp.Candidates[0].Content.Parts) == 0 {
-		return model.RecommendResponse{}, fmt.Errorf("no response from gemini")
+	if len(resp.Candidates) == 0 {
+		log.Printf("[Gemini] error=no_candidates")
+		return model.RecommendResponse{}, fmt.Errorf("no response from gemini: no candidates")
+	}
+	if len(resp.Candidates[0].Content.Parts) == 0 {
+		log.Printf("[Gemini] error=no_parts finish_reason=%v", resp.Candidates[0].FinishReason)
+		return model.RecommendResponse{}, fmt.Errorf("no response from gemini: empty parts")
 	}
 
 	// JSONパース
@@ -102,7 +86,12 @@ func (s *GeminiService) GetRecommendations(ctx context.Context, mbti string, moo
 	for _, part := range resp.Candidates[0].Content.Parts {
 		if txt, ok := part.(genai.Text); ok {
 			if err := json.Unmarshal([]byte(txt), &response); err != nil {
-				return model.RecommendResponse{}, fmt.Errorf("failed to parse json: %v", err)
+				preview := string(txt)
+				if len(preview) > 300 {
+					preview = preview[:300] + "..."
+				}
+				log.Printf("[Gemini] error=parse_json err=%v response_preview=%s", err, preview)
+				return model.RecommendResponse{}, fmt.Errorf("failed to parse json: %w", err)
 			}
 			break
 		}

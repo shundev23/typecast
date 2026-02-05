@@ -16,20 +16,24 @@ type RecommendHandler struct {
 }
 
 func (h *RecommendHandler) Recommend(c echo.Context) error {
+	log.Printf("[Recommend] start")
+
 	// 1.ユーザーIDの取得
 	uid, ok := c.Get("uid").(string)
 	if !ok {
-		return  c.JSON(http.StatusUnauthorized, map[string]string{"error": "User ID not found"})
+		log.Printf("[Recommend] error=unauthorized reason=uid_not_found")
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "User ID not found"})
 	}
+	log.Printf("[Recommend] uid=%s", uid)
 
 	// 利用制限チェック(1日3回まで)
 	count, allowed, err := h.User.CheckAndIncrementLimit(c.Request().Context(), uid, 3)
 	if err != nil {
-		log.Printf("Error checking limit for user %s: %v", uid, err)
+		log.Printf("[Recommend] error=limit_check_failed uid=%s err=%v", uid, err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to check limit"})
 	}
-	if !allowed{
-		// 制限オーバー時は 429 Too Many Requests を返す
+	if !allowed {
+		log.Printf("[Recommend] error=rate_limited uid=%s count=%d", uid, count)
 		return c.JSON(http.StatusTooManyRequests, map[string]interface{}{
 			"error": "Daily limit exceeded",
 			"limit": 3,
@@ -37,21 +41,24 @@ func (h *RecommendHandler) Recommend(c echo.Context) error {
 		})
 	}
 
-
 	var req model.RecommendRequest
 	if err := c.Bind(&req); err != nil {
+		log.Printf("[Recommend] error=bind_failed err=%v", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request"})
 	}
-
 	if req.MBTI == "" {
 		req.MBTI = "INTP"
 	}
+	log.Printf("[Recommend] mbti=%s mood_len=%d ignore_count=%d", req.MBTI, len(req.Mood), len(req.IgnoreMovies))
 
 	// 1. Geminiから映画リスト(JSON)を取得
+	log.Printf("[Recommend] calling_gemini")
 	geminiResp, err := h.Gemini.GetRecommendations(c.Request().Context(), req.MBTI, req.Mood, req.IgnoreMovies)
 	if err != nil {
+		log.Printf("[Recommend] error=gemini_failed err=%v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
+	log.Printf("[Recommend] gemini_ok movies=%d", len(geminiResp.Movies))
 
 	// 2. 各映画についてTMDBで画像を検索・付与
 	for i := range geminiResp.Movies {
@@ -65,5 +72,6 @@ func (h *RecommendHandler) Recommend(c echo.Context) error {
 		geminiResp.Movies[i].Providers = providers
 	}
 
+	log.Printf("[Recommend] success uid=%s movies=%d", uid, len(geminiResp.Movies))
 	return c.JSON(http.StatusOK, geminiResp)
 }

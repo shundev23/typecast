@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strings"
 
@@ -29,12 +30,13 @@ func AuthMiddleware(app *firebase.App) echo.MiddlewareFunc {
 			// 3. Firebaseでトークン検証
 			client, err := app.Auth(context.Background())
 			if err != nil {
+				log.Printf("[Auth] error=auth_client_init err=%v", err)
 				return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to initialize auth client"})
 			}
 
 			token, err := client.VerifyIDToken(context.Background(), idToken)
 			if err != nil {
-				// トークン期限切れや不正な署名など
+				log.Printf("[Auth] error=verify_token_failed err=%v", err)
 				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid or expired token"})
 			}
 

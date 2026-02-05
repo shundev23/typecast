@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 	"typecast/internal/model"
 
@@ -41,7 +42,7 @@ func (s *UserService) CheckAndIncrementLimit(ctx context.Context, uid string, li
 		var usage model.UserUsage
 
 		// ドキュメントがまだない場合（初回ユーザー）
-		if err != nil &&  (err.Error() == "rpc error: code = NotFound desc = " || err.Error() == "rpc error: code = NotFound desc = document not found") || !doc.Exists() {
+		if err != nil && (err.Error() == "rpc error: code = NotFound desc = " || err.Error() == "rpc error: code = NotFound desc = document not found") || !doc.Exists() {
 			usage = model.UserUsage{
 				Count:     0,
 				LastReset: time.Now(),
@@ -75,7 +76,7 @@ func (s *UserService) CheckAndIncrementLimit(ctx context.Context, uid string, li
 		usage.Count++
 		usage.LastReset = time.Now() // 更新時刻
 		currentCount = usage.Count
-		
+
 		return tx.Set(docRef, usage)
 	})
 
@@ -83,7 +84,8 @@ func (s *UserService) CheckAndIncrementLimit(ctx context.Context, uid string, li
 		if err.Error() == "limit_exceeded" {
 			return currentCount, false, nil // 制限オーバー
 		}
-		return 0, false, err // その他のエラー
+		log.Printf("[User] error=check_limit_failed uid=%s err=%v", uid, err)
+		return 0, false, err // その他のエラー（Firestore等）
 	}
 
 	return currentCount, true, nil // 許可
