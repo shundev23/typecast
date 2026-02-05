@@ -30,6 +30,7 @@ function App() {
   
   // チャート用データ
   const [historyData, setHistoryData] = useState<HistoryItem[]>([]);
+  const currentYear = new Date().getFullYear();
 
   // --- 0. 言語・テーマの復元（localStorage） ---
   useEffect(() => {
@@ -183,7 +184,7 @@ function App() {
   // 評価ボタンを押したときの処理
   const handleFeedback = async (movieTitle: string, type: 'good' | 'bad' | 'watched') => {
     if (!user) {
-      alert("ログインが必要です");
+      alert(t(lang, 'loginRequired'));
       return;
     }
 
@@ -198,10 +199,10 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-typecast-bg text-typecast-text">
+    <div className="min-h-screen bg-typecast-bg text-typecast-text flex flex-col">
       {/* ヘッダー: シンプル・余白を活かした Airbnb 風 */}
       <header className="border-b border-typecast-border bg-typecast-surface">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="Typecast Logo" className="w-10 h-10 object-contain" />
             <div>
@@ -246,7 +247,7 @@ function App() {
             ) : (
               <button
                 onClick={handleLogin}
-                className="flex items-center gap-2 bg-typecast-accent hover:bg-typecast-accent-hover text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-typecast"
+                className="hidden md:flex items-center gap-2 bg-typecast-accent hover:bg-typecast-accent-hover text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-typecast"
               >
                 <LogIn className="w-4 h-4" />
                 <span>{t(lang, 'login')}</span>
@@ -283,16 +284,16 @@ function App() {
       </div>
 
       {/* メインコンテンツ */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <main className="max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-10 flex-1">
         {/* 感情分析チャート (データがあるときだけ表示) */}
         {user && historyData.length > 0 && (
-          <div className="mb-10">
+          <div className="mb-8">
             <MoodChart data={historyData} lang={lang} />
           </div>
         )}
 
         {/* 入力フォーム: カード型・余白を活かしたデザイン */}
-        <div className="max-w-2xl mx-auto mb-12">
+        <div className="max-w-2xl mx-auto mb-8">
           <div className="bg-typecast-surface rounded-2xl border border-typecast-border shadow-typecast overflow-hidden">
             <div className="p-6 sm:p-8">
               <div className="flex flex-col sm:flex-row gap-6">
@@ -360,7 +361,7 @@ function App() {
 
         {/* 感情スコア & シェア (結果があるとき) */}
         {movies.length > 0 && (
-          <div className="mb-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="mb-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             <div className="bg-typecast-surface rounded-xl border border-typecast-border shadow-typecast px-6 py-4 flex items-center gap-6">
               <div className="text-center border-r border-typecast-border pr-6">
                 <p className="text-xs text-typecast-muted font-medium mb-1">{t(lang, 'sentimentScore')}</p>
@@ -520,7 +521,7 @@ function App() {
       )}
 
       {/* フッター */}
-      <footer className="border-t border-typecast-border bg-typecast-surface mt-16">
+      <footer className="border-t border-typecast-border bg-typecast-surface mt-10 sm:mt-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-8">
             <div className="space-y-2">
@@ -554,8 +555,8 @@ function App() {
             </div>
           </div>
 
-          <div className="mt-10 pt-6 border-t border-typecast-border flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-xs text-typecast-muted">&copy; 2025 TYPECAST</p>
+          <div className="mt-8 pt-6 border-t border-typecast-border flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-xs text-typecast-muted">© {currentYear} Typecast. All rights reserved.</p>
             <div className="flex items-center gap-3 text-xs text-typecast-muted">
               <span>{lang === 'ja' ? '言語' : 'Language'}: {lang === 'ja' ? '日本語' : 'EN'}</span>
               <span>•</span>
