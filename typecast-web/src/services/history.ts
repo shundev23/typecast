@@ -4,10 +4,14 @@ import type { HistoryItem, ApiHistoryItem, SaveHistoryRequest } from '../types';
 export const historyService = {
   // 履歴を取得し、Date型に変換して返す
   fetchAll: async (token: string): Promise<HistoryItem[]> => {
-    const data = await apiClient<ApiHistoryItem[]>('/api/history', {
+    const data = await apiClient<ApiHistoryItem[] | null>('/api/history', {
       method: 'GET',
       token,
     });
+
+    if (data == null || !Array.isArray(data)) {
+      return [];
+    }
 
     // 変換処理 (DTO -> Domain Model)
     return data.map((item) => ({
