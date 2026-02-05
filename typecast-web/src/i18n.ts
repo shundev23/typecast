@@ -1,0 +1,125 @@
+export type Lang = 'ja' | 'en';
+
+export type I18nKey =
+  | 'login'
+  | 'loginWithGoogle'
+  | 'logout'
+  | 'mbtiType'
+  | 'mood'
+  | 'analyzeRecommend'
+  | 'shareOnX'
+  | 'analysisResult'
+  | 'sentimentScore'
+  | 'availableInJP'
+  | 'feedback'
+  | 'like'
+  | 'dislike'
+  | 'watched'
+  | 'limitTitle'
+  | 'limitSubtitle'
+  | 'limitBody'
+  | 'limitNext'
+  | 'close'
+  | 'aboutTitle'
+  | 'aboutHeading'
+  | 'aboutConceptTitle'
+  | 'aboutConceptBody'
+  | 'aboutFeaturesTitle'
+  | 'aboutFeature1'
+  | 'aboutFeature2'
+  | 'aboutFeature3'
+  | 'poweredBy'
+  | 'termsPrivacy'
+  | 'contact'
+  | 'tmdbDisclaimer'
+  | 'loginRequired'
+  | 'genericError'
+  | 'shareFailed'
+  | 'feedbackSaved'
+  | 'feedbackFailed';
+
+const dict: Record<Lang, Record<I18nKey, string>> = {
+  ja: {
+    login: 'ログイン',
+    loginWithGoogle: 'Google でログイン',
+    logout: 'ログアウト',
+    mbtiType: 'MBTI タイプ',
+    mood: '今の気分',
+    analyzeRecommend: '分析して映画を提案',
+    shareOnX: 'X でシェア',
+    analysisResult: '分析結果',
+    sentimentScore: 'Sentiment Score',
+    availableInJP: '視聴可能 (日本)',
+    feedback: 'フィードバック',
+    like: '好き',
+    dislike: '好みじゃない',
+    watched: '視聴済み',
+    limitTitle: '本日の上限に達しました',
+    limitSubtitle: '1日3回まで',
+    limitBody: '過度な情報の摂取は、決定麻痺（Analysis Paralysis）を引き起こす可能性があります。',
+    limitNext: '次回利用可能: 明日 00:00 JST',
+    close: '閉じる',
+    aboutTitle: 'Typecastについて',
+    aboutHeading: 'TYPECAST について',
+    aboutConceptTitle: 'コンセプト',
+    aboutConceptBody:
+      '「検索疲れ」を終わらせるための、AI映画コンシェルジュです。\nあなたの MBTI（性格タイプ） と 今の気分 を分析し、論理的に最適な一作を提案します。',
+    aboutFeaturesTitle: '特徴',
+    aboutFeature1: 'Gemini 2.0 による心理機能ベースの分析',
+    aboutFeature2: '気分に合わせた Sentiment Score',
+    aboutFeature3: 'ネタバレなしの「観るべき理由」を解説',
+    poweredBy: 'Powered by TMDB & Gemini API',
+    termsPrivacy: '利用規約・プライバシー',
+    contact: 'お問い合わせ',
+    tmdbDisclaimer: 'This product uses the TMDB API but is not endorsed or certified by TMDB.',
+    loginRequired: 'ログインしてください',
+    genericError: 'エラーが発生しました',
+    shareFailed: 'シェアリンクの作成に失敗しました。',
+    feedbackSaved: 'を記録しました！',
+    feedbackFailed: '評価の送信に失敗しました',
+  },
+  en: {
+    login: 'Log in',
+    loginWithGoogle: 'Log in with Google',
+    logout: 'Log out',
+    mbtiType: 'MBTI Type',
+    mood: 'Mood',
+    analyzeRecommend: 'Analyze & Recommend',
+    shareOnX: 'Share on X',
+    analysisResult: 'Analysis',
+    sentimentScore: 'Sentiment Score',
+    availableInJP: 'Available in Japan',
+    feedback: 'Feedback',
+    like: 'Like',
+    dislike: "Not for me",
+    watched: 'Watched',
+    limitTitle: "Today's limit reached",
+    limitSubtitle: 'Up to 3 per day',
+    limitBody: 'Too much information can lead to analysis paralysis.',
+    limitNext: 'Next available: Tomorrow 00:00 JST',
+    close: 'Close',
+    aboutTitle: 'About Typecast',
+    aboutHeading: 'About TYPECAST',
+    aboutConceptTitle: 'Concept',
+    aboutConceptBody:
+      'An AI movie concierge to end “search fatigue”.\nWe analyze your MBTI type and current mood, then recommend a logically fitting movie.',
+    aboutFeaturesTitle: 'Highlights',
+    aboutFeature1: 'Cognitive-function-based analysis powered by Gemini 2.0',
+    aboutFeature2: 'Mood-based Sentiment Score',
+    aboutFeature3: 'Spoiler-free explanations of “why this movie”',
+    poweredBy: 'Powered by TMDB & Gemini API',
+    termsPrivacy: 'Terms & Privacy',
+    contact: 'Contact',
+    tmdbDisclaimer: 'This product uses the TMDB API but is not endorsed or certified by TMDB.',
+    loginRequired: 'Please log in',
+    genericError: 'An error occurred',
+    shareFailed: 'Failed to create a share link.',
+    feedbackSaved: ' saved!',
+    feedbackFailed: 'Failed to send feedback',
+  },
+};
+
+export function t(lang: Lang, key: I18nKey): string {
+  return dict[lang][key];
+}
+

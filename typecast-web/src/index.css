@@ -1,1 +1,59 @@
 @import "tailwindcss";
+
+/* ============================================
+   TYPECAST Design System - Airbnb-inspired
+   - シンプル・温かみ・余白を活かしたレイアウト
+   - 本アプリの仕様（MBTI映画レコメンド）を維持
+   ============================================ */
+
+@theme {
+  /* Airbnb風カラーパレット - bg-typecast-* 等で使用 */
+  --color-typecast-bg: #f7f7f5;
+  --color-typecast-surface: #ffffff;
+  --color-typecast-border: #ebebeb;
+  --color-typecast-muted: #717171;
+  --color-typecast-text: #222222;
+  --color-typecast-accent: #e31c5f;
+  --color-typecast-accent-hover: #c13584;
+  --color-typecast-secondary: #484848;
+}
+
+:root {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color-scheme: light;
+}
+
+/* ベースレイアウト */
+body {
+  background-color: var(--color-typecast-bg);
+  color: var(--color-typecast-text);
+}
+
+/* ダークモード: CSS変数の上書き（.dark は html に付与） */
+html.dark {
+  color-scheme: dark;
+  --color-typecast-bg: #0b0c0f;
+  --color-typecast-surface: #12141a;
+  --color-typecast-border: #242833;
+  --color-typecast-muted: #9aa3b2;
+  --color-typecast-text: #eef1f6;
+  --color-typecast-accent: #ff385c;
+  --color-typecast-accent-hover: #e31c5f;
+  --color-typecast-secondary: #c7cedb;
+}
+
+/* カード用の柔らかいシャドウ (Airbnb風) */
+.shadow-typecast {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.shadow-typecast-lg {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* ホバー時のスムーズなトランジション */
+.transition-typecast {
+  transition: all 0.2s ease;
+}

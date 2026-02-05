@@ -1,6 +1,7 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { format, subDays, startOfDay } from 'date-fns';
 import { Lock, Activity } from 'lucide-react';
+import type { Lang } from '../i18n';
 
 type ChartData = {
   timestamp: Date;
@@ -10,6 +11,7 @@ type ChartData = {
 
 type Props = {
   data: ChartData[];
+  lang: Lang;
 };
 
 // ツールチップの定義
@@ -22,26 +24,26 @@ type CustomTooltipProps = {
   label?: Date;
 };
 
-const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
+const CustomTooltip = ({ active, payload, label, lang }: CustomTooltipProps & { lang: Lang }) => {
   if (active && payload && payload.length > 0) {
     const score = payload[0].value;
     const moodText = payload[0].payload.mood;
 
-    let status = "Neutral";
-    if (score >= 3) status = "Very Positive";
-    else if (score >= 1) status = "Positive";
-    else if (score <= -3) status = "Very Negative";
-    else if (score <= -1) status = "Negative";
+    let status = lang === 'ja' ? 'ニュートラル' : 'Neutral';
+    if (score >= 3) status = lang === 'ja' ? '非常にポジティブ' : 'Very Positive';
+    else if (score >= 1) status = lang === 'ja' ? 'ポジティブ' : 'Positive';
+    else if (score <= -3) status = lang === 'ja' ? '非常にネガティブ' : 'Very Negative';
+    else if (score <= -1) status = lang === 'ja' ? 'ネガティブ' : 'Negative';
 
     return (
-      <div className="bg-gray-900 border border-gray-700 p-3 rounded-lg shadow-xl max-w-xs">
-        <p className="text-gray-400 text-xs mb-1">
-          {label ? format(label, 'MM/dd') : ''} (Daily Avg)
+      <div className="bg-white border border-[#ebebeb] p-3 rounded-lg shadow-lg max-w-xs">
+        <p className="text-[#717171] text-xs mb-1">
+          {label ? format(label, 'MM/dd') : ''} ({lang === 'ja' ? '日平均' : 'Daily Avg'})
         </p>
-        <p className="text-cyan-400 font-bold text-sm">
-          Score: {score} <span className="text-gray-500 text-xs ml-1">({status})</span>
+        <p className="text-[#e31c5f] font-semibold text-sm">
+          Score: {score} <span className="text-[#717171] text-xs ml-1 font-normal">({status})</span>
         </p>
-        <p className="text-gray-300 text-xs mt-2 italic border-t border-gray-800 pt-1">
+        <p className="text-[#484848] text-xs mt-2 italic border-t border-[#ebebeb] pt-1">
           "{moodText}"
         </p>
       </div>
@@ -50,7 +52,7 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   return null;
 };
 
-export const MoodChart = ({ data }: Props) => {
+export const MoodChart = ({ data, lang }: Props) => {
   // 1. ロック判定: ユニークな日付の数をカウント
   const uniqueDays = new Set(
     data.map(item => format(item.timestamp, 'yyyy-MM-dd'))
@@ -99,23 +101,30 @@ export const MoodChart = ({ data }: Props) => {
   // --- UI: データ不足時のロック画面 ---
   if (isLocked) {
     return (
-      <div className="w-full bg-gray-900/50 rounded-xl p-6 border border-gray-800 shadow-inner text-center relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gray-800">
-          <div className="h-full bg-cyan-500 transition-all duration-1000" style={{ width: `${progress}%` }}></div>
+      <div className="w-full bg-white rounded-2xl p-6 border border-[#ebebeb] shadow-[0_1px_2px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.08)] text-center relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-[#ebebeb]">
+          <div className="h-full bg-[#e31c5f] transition-all duration-1000" style={{ width: `${progress}%` }}></div>
         </div>
-        
         <div className="flex flex-col items-center justify-center py-8 gap-4">
-          <div className="p-4 bg-gray-800 rounded-full text-gray-500 animate-pulse">
+          <div className="p-4 bg-[#f7f7f5] rounded-full text-[#717171]">
             <Lock className="w-8 h-8" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-200">Weekly Rhythm Analysis</h3>
-            <p className="text-sm text-gray-400 mt-2 max-w-md mx-auto">
-              正確なバイオリズムを算出するために、あと <span className="text-cyan-400 font-bold">{REQUIRED_DAYS - uniqueDays}日分</span> のデータが必要です。
+            <h3 className="text-lg font-semibold text-[#222222]">{lang === 'ja' ? '週間リズム分析' : 'Weekly Rhythm Analysis'}</h3>
+            <p className="text-sm text-[#717171] mt-2 max-w-md mx-auto">
+              {lang === 'ja' ? (
+                <>
+                  あと <span className="text-[#e31c5f] font-semibold">{REQUIRED_DAYS - uniqueDays}日分</span> のデータで表示できます
+                </>
+              ) : (
+                <>
+                  Add <span className="text-[#e31c5f] font-semibold">{REQUIRED_DAYS - uniqueDays}</span> more day(s) to unlock
+                </>
+              )}
             </p>
           </div>
-          <div className="text-xs font-mono text-gray-500">
-            Progress: {uniqueDays} / {REQUIRED_DAYS} Days
+          <div className="text-xs text-[#717171]">
+            {uniqueDays} / {REQUIRED_DAYS} {lang === 'ja' ? '日' : 'days'}
           </div>
         </div>
       </div>
@@ -124,57 +133,32 @@ export const MoodChart = ({ data }: Props) => {
 
   // --- UI: チャート表示 (ロック解除後) ---
   return (
-    <div className="w-full h-[350px] bg-gray-900/50 rounded-xl p-6 border border-gray-800 shadow-inner">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-          <Activity className="w-4 h-4 text-cyan-500" />
-          Weekly Mental Trajectory
+    <div className="w-full h-[350px] bg-white rounded-2xl p-6 border border-[#ebebeb] shadow-[0_1px_2px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.08)]">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+        <h3 className="text-sm font-medium text-[#222222] flex items-center gap-2">
+          <Activity className="w-4 h-4 text-[#e31c5f]" />
+          {lang === 'ja' ? '週間メンタル推移' : 'Weekly Mental Trajectory'}
         </h3>
-        <div className="flex gap-4 text-[10px] font-mono text-gray-500">
-            <span className="flex items-center gap-1"><div className="w-2 h-2 bg-cyan-500/20 border border-cyan-500 rounded-full"></div> Positive Zone</span>
-            <span className="flex items-center gap-1"><div className="w-2 h-2 bg-red-500/20 border border-red-500 rounded-full"></div> Negative Zone</span>
+        <div className="flex gap-4 text-xs text-[#717171]">
+          <span className="flex items-center gap-1.5"><div className="w-2 h-2 bg-[#e31c5f]/30 rounded-full"></div> {lang === 'ja' ? 'ポジティブ' : 'Positive'}</span>
+          <span className="flex items-center gap-1.5"><div className="w-2 h-2 bg-red-500/30 rounded-full"></div> {lang === 'ja' ? 'ネガティブ' : 'Negative'}</span>
         </div>
       </div>
-      
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.4}/>
-              <stop offset="50%" stopColor="#22d3ee" stopOpacity={0.1}/>
-              <stop offset="100%" stopColor="#f87171" stopOpacity={0.4}/>
+              <stop offset="0%" stopColor="#e31c5f" stopOpacity={0.3}/>
+              <stop offset="50%" stopColor="#e31c5f" stopOpacity={0.08}/>
+              <stop offset="100%" stopColor="#ef4444" stopOpacity={0.3}/>
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-          
-          <XAxis 
-            dataKey="timestamp" 
-            tickFormatter={(date) => format(date, 'MM/dd')}
-            stroke="#6b7280"
-            fontSize={10}
-            tickMargin={10}
-          />
-          
-          <YAxis 
-            domain={[-5, 5]} 
-            stroke="#6b7280" 
-            fontSize={10}
-            tickCount={5}
-            ticks={[-5, 0, 5]} 
-          />
-          
-          <Tooltip content={<CustomTooltip />} />
-          
-          <ReferenceLine y={0} stroke="#4b5563" strokeDasharray="3 3" />
-          
-          <Area 
-            type="monotone" 
-            dataKey="score" 
-            stroke="#22d3ee" 
-            strokeWidth={2}
-            fill="url(#colorScore)" 
-            animationDuration={1500}
-          />
+          <CartesianGrid strokeDasharray="3 3" stroke="#ebebeb" vertical={false} />
+          <XAxis dataKey="timestamp" tickFormatter={(date) => format(date, 'MM/dd')} stroke="#717171" fontSize={11} tickMargin={10} />
+          <YAxis domain={[-5, 5]} stroke="#717171" fontSize={11} tickCount={5} ticks={[-5, 0, 5]} />
+          <Tooltip content={<CustomTooltip lang={lang} />} />
+          <ReferenceLine y={0} stroke="#717171" strokeDasharray="3 3" />
+          <Area type="monotone" dataKey="score" stroke="#e31c5f" strokeWidth={2} fill="url(#colorScore)" animationDuration={1500} />
         </AreaChart>
       </ResponsiveContainer>
     </div>

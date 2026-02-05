@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 // アイコン
-import { Sparkles, Loader2, Brain, Lightbulb, LogIn, LogOut, User as UserIcon, Share2, Ban, X, ThumbsUp, ThumbsDown, Eye, Info } from 'lucide-react';
+import { Sparkles, Loader2, Brain, Lightbulb, LogIn, LogOut, User as UserIcon, Share2, Ban, X, ThumbsUp, ThumbsDown, Eye, Info, Moon, Sun, Languages } from 'lucide-react';
 // Firebase Auth (認証)
 import { signInWithPopup, signOut, onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
@@ -14,6 +14,7 @@ import { shareService } from './services/share';
 // Types & Utils
 import type { Movie, HistoryItem } from './types';
 import { ApiError } from './lib/apiClient';
+import { t, type Lang } from './i18n';
 
 function App() {
   // --- State管理 ---
@@ -24,9 +25,31 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
+  const [lang, setLang] = useState<Lang>('ja');
+  const [darkMode, setDarkMode] = useState(false);
   
   // チャート用データ
   const [historyData, setHistoryData] = useState<HistoryItem[]>([]);
+
+  // --- 0. 言語・テーマの復元（localStorage） ---
+  useEffect(() => {
+    const savedLang = localStorage.getItem('typecast_lang');
+    if (savedLang === 'ja' || savedLang === 'en') setLang(savedLang);
+
+    const savedTheme = localStorage.getItem('typecast_theme');
+    const isDark = savedTheme === 'dark';
+    setDarkMode(isDark);
+    document.documentElement.classList.toggle('dark', isDark);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('typecast_lang', lang);
+  }, [lang]);
+
+  useEffect(() => {
+    localStorage.setItem('typecast_theme', darkMode ? 'dark' : 'light');
+    document.documentElement.classList.toggle('dark', darkMode);
+  }, [darkMode]);
 
   // --- 1. ログイン状態の監視 ---
   useEffect(() => {
@@ -78,7 +101,7 @@ function App() {
     if (!mood) return;
 
     if (!user) {
-        alert("ログインしてください");
+        alert(t(lang, 'loginRequired'));
         return;
     }
 
@@ -153,7 +176,7 @@ function App() {
 
     } catch (error) {
       console.error("Share Error:", error);
-      alert("シェアリンクの作成に失敗しました。");
+      alert(t(lang, 'shareFailed'));
     }
   };
 
@@ -167,349 +190,379 @@ function App() {
     try {
       const token = await user.getIdToken();
       await feedbackService.sendFeedback(movieTitle, type, token);
-      alert(`「${movieTitle}」を記録しました！`);
+      alert(`「${movieTitle}」${t(lang, 'feedbackSaved')}`);
     } catch (error) {
       console.error("Feedback Error:", error);
-      alert("評価の送信に失敗しました");
+      alert(t(lang, 'feedbackFailed'));
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 p-8 font-sans">
-      <header className="max-w-6xl mx-auto mb-12 relative">
-        {/* PC用ログインエリア */}
-        <div className="absolute right-0 top-0 hidden md:flex items-center gap-4">
-          {user ? (
-            <div className="flex items-center gap-3 bg-gray-900 px-4 py-2 rounded-full border border-gray-800">
-              {user.photoURL ? (
-                <img src={user.photoURL} alt="User" className="w-8 h-8 rounded-full border border-gray-600" />
-              ) : (
-                <UserIcon className="w-5 h-5 text-gray-400" />
-              )}
-              <span className="text-sm text-gray-300 font-medium hidden lg:block">{user.displayName}</span>
-              <button onClick={handleLogout} className="ml-2 p-1 hover:bg-gray-800 rounded-full text-gray-500 hover:text-red-400 transition-colors">
-                <LogOut className="w-4 h-4" />
-              </button>
+    <div className="min-h-screen bg-typecast-bg text-typecast-text">
+      {/* ヘッダー: シンプル・余白を活かした Airbnb 風 */}
+      <header className="border-b border-typecast-border bg-typecast-surface">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="Typecast Logo" className="w-10 h-10 object-contain" />
+            <div>
+              <h1 className="text-xl font-semibold tracking-tight text-typecast-text">TYPECAST</h1>
+              <p className="text-xs text-typecast-muted hidden sm:block">MBTI Logic-Based Cinema Recommender</p>
             </div>
-          ) : (
-            <button onClick={handleLogin} className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-cyan-400 px-4 py-2 rounded-full border border-gray-700 transition-all text-sm font-bold">
-              <LogIn className="w-4 h-4" />
-              <span>Login / Sign up</span>
-            </button>
-          )}
-        </div>
-
-        {/* ロゴエリア */}
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <img src="/logo.png" alt="Typecast Logo" className="w-12 h-12 object-contain drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]" />
-            <h1 className="text-3xl font-bold tracking-wider">TYPECAST</h1>
           </div>
-          <p className="text-gray-400">MBTI Logic-Based Cinema Recommender</p>
-          <button 
-            onClick={() => setShowAboutModal(true)}
-            className="mt-4 text-xs text-gray-500 hover:text-cyan-400 flex items-center justify-center gap-1 mx-auto transition-colors border-b border-transparent hover:border-cyan-400 pb-0.5"
-          >
-            <Info className="w-3 h-3" />
-            <span>What is TYPECAST?</span>
-          </button>
+          <div className="flex items-center gap-3">
+            {/* 言語切替 */}
+            <button
+              onClick={() => setLang((prev) => (prev === 'ja' ? 'en' : 'ja'))}
+              className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg border border-typecast-border text-sm text-typecast-muted hover:text-typecast-text hover:bg-typecast-bg transition-colors"
+              aria-label="Language"
+            >
+              <Languages className="w-4 h-4" />
+              <span className="font-medium">{lang === 'ja' ? '日本語' : 'EN'}</span>
+            </button>
+
+            {/* ダークモード切替 */}
+            <button
+              onClick={() => setDarkMode((v) => !v)}
+              className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg border border-typecast-border text-sm text-typecast-muted hover:text-typecast-text hover:bg-typecast-bg transition-colors"
+              aria-label="Theme"
+            >
+              {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              <span className="font-medium">{darkMode ? 'Light' : 'Dark'}</span>
+            </button>
+            {user ? (
+              <div className="flex items-center gap-2">
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt="User" className="w-9 h-9 rounded-full border border-typecast-border" />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-typecast-border flex items-center justify-center">
+                    <UserIcon className="w-5 h-5 text-typecast-muted" />
+                  </div>
+                )}
+                <span className="text-sm font-medium text-typecast-text hidden md:block max-w-[120px] truncate">{user.displayName}</span>
+                <button onClick={handleLogout} className="p-2 rounded-full hover:bg-typecast-bg text-typecast-muted hover:text-typecast-accent transition-colors">
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleLogin}
+                className="flex items-center gap-2 bg-typecast-accent hover:bg-typecast-accent-hover text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-typecast"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>{t(lang, 'login')}</span>
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* スマホ用ログインボタン */}
-      <div className="md:hidden flex justify-center mb-8">
-          {!user && (
-            <button onClick={handleLogin} className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-cyan-400 px-6 py-2 rounded-full border border-gray-700 transition-all text-sm font-bold">
-              <LogIn className="w-4 h-4" />
-              <span>Login with Google</span>
-            </button>
-          )}
-          {user && (
-             <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-400">Logged in as {user.displayName}</span>
-                <button onClick={handleLogout} className="text-xs text-red-400 underline">Logout</button>
-             </div>
-          )}
-      </div>
-
-      {/* 感情分析チャート (データがあるときだけ表示) */}
-      {user && historyData.length > 0 && (
-        <div className="max-w-4xl mx-auto mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-           <MoodChart data={historyData} />
-        </div>
-      )}
-
-      {/* 入力フォーム */}
-      <div className="max-w-2xl mx-auto bg-gray-900/80 p-6 rounded-2xl border border-gray-800 shadow-2xl mb-12 backdrop-blur-sm">
-        <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-3 gap-4">
-             <div className="col-span-1">
-               <label className="block text-xs font-bold text-gray-500 mb-1">TYPE</label>
-               <select 
-                  value={mbti} 
-                  onChange={(e) => setMbti(e.target.value)} 
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm focus:border-cyan-500 outline-none appearance-none"
-                >
-                  <optgroup label="Analysts (分析家)">
-                    <option value="INTJ">INTJ (建築家)</option>
-                    <option value="INTP">INTP (論理学者)</option>
-                    <option value="ENTJ">ENTJ (指揮官)</option>
-                    <option value="ENTP">ENTP (討論者)</option>
-                  </optgroup>
-                  <optgroup label="Diplomats (外交官)">
-                    <option value="INFJ">INFJ (提唱者)</option>
-                    <option value="INFP">INFP (仲介者)</option>
-                    <option value="ENFJ">ENFJ (主人公)</option>
-                    <option value="ENFP">ENFP (運動家)</option>
-                  </optgroup>
-                  <optgroup label="Sentinels (番人)">
-                    <option value="ISTJ">ISTJ (管理者)</option>
-                    <option value="ISFJ">ISFJ (擁護者)</option>
-                    <option value="ESTJ">ESTJ (幹部)</option>
-                    <option value="ESFJ">ESFJ (領事官)</option>
-                  </optgroup>
-                  <optgroup label="Explorers (探検家)">
-                    <option value="ISTP">ISTP (巨匠)</option>
-                    <option value="ISFP">ISFP (冒険家)</option>
-                    <option value="ESTP">ESTP (起業家)</option>
-                    <option value="ESFP">ESFP (エンターテイナー)</option>
-                  </optgroup>
-                </select>
-             </div>
-             <div className="col-span-2">
-               <label className="block text-xs font-bold text-gray-500 mb-1">MOOD</label>
-               <textarea
-                 value={mood} 
-                 onChange={(e) => setMood(e.target.value)} 
-                 placeholder="例: 仕事で理不尽なことがあってムシャクシャしてるから、とにかく派手にぶっ壊す映画が見たい。" 
-                 rows={3}
-                 className="w-full bg-gray-800 border border-gray-700 rounded-xl p-4 text-lg focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all placeholder-gray-600 resize-none leading-relaxed"
-                 onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleRecommend();
-                    }
-                 }}
-               />
-             </div>
-          </div>
-          <button 
-            onClick={handleRecommend} 
-            disabled={loading || !mood} 
-            className="w-full mt-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:from-gray-800 disabled:to-gray-800 disabled:text-gray-500 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-cyan-900/20"
+      {/* スマホ用: 言語/テーマ とログイン案内 */}
+      <div className="md:hidden px-4 py-4 border-b border-typecast-border bg-typecast-surface">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setLang((prev) => (prev === 'ja' ? 'en' : 'ja'))}
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-typecast-border text-sm text-typecast-muted hover:text-typecast-text hover:bg-typecast-bg transition-colors"
           >
-            {loading ? <Loader2 className="animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            <span>Analyze & Recommend</span>
+            <Languages className="w-4 h-4" />
+            {lang === 'ja' ? '日本語' : 'English'}
+          </button>
+          <button
+            onClick={() => setDarkMode((v) => !v)}
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-typecast-border text-sm text-typecast-muted hover:text-typecast-text hover:bg-typecast-bg transition-colors"
+          >
+            {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {darkMode ? 'Light' : 'Dark'}
           </button>
         </div>
+        {!user && (
+          <button onClick={handleLogin} className="mt-3 w-full flex items-center justify-center gap-2 bg-typecast-accent hover:bg-typecast-accent-hover text-white py-3 rounded-lg font-medium">
+            <LogIn className="w-4 h-4" />
+            {t(lang, 'loginWithGoogle')}
+          </button>
+        )}
       </div>
 
-      {movies.length > 0 && (
-        <div className="max-w-6xl mx-auto mb-8 flex justify-center">
-            <div className="bg-gray-900 border border-gray-700 rounded-lg p-4 px-8 flex items-center gap-6 shadow-lg animate-in fade-in slide-in-from-bottom-2">
-                <div className="text-center border-r border-gray-700 pr-6">
-                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Sentiment Score</p>
-                    <p className={`text-3xl font-bold ${
-                        (historyData[historyData.length - 1]?.score ?? 0) > 0 ? 'text-cyan-400' : 
-                        (historyData[historyData.length - 1]?.score ?? 0) < 0 ? 'text-red-400' : 'text-gray-200'
-                    }`}>
-                        {historyData[historyData.length - 1]?.score > 0 ? '+' : ''}
-                        {historyData[historyData.length - 1]?.score}
-                    </p>
-                </div>
-                <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Analysis</p>
-                    <p className="text-gray-300 text-sm font-medium">
-                        {(historyData[historyData.length - 1]?.score ?? 0) >= 3 ? '非常にポジティブ・高揚状態' :
-                         (historyData[historyData.length - 1]?.score ?? 0) >= 1 ? 'ポジティブ・安定的' :
-                         (historyData[historyData.length - 1]?.score ?? 0) === 0 ? 'ニュートラル・平常心' :
-                         (historyData[historyData.length - 1]?.score ?? 0) >= -2 ? 'ネガティブ・疲労気味' :
-                         '非常にネガティブ・要休息'}
-                    </p>
-                </div>
-            </div>
-            <button
-              onClick={handleShare}
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm font-medium border border-gray-700 hover:border-gray-500 rounded-full px-4 py-2"
-            >
-              <Share2 className="w-4 h-4" />
-              <span>Share Result on X</span>
-            </button>
-        </div>
-      )}
-
-      {/* 結果表示エリア */}
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {movies.map((movie, idx) => (
-          <div key={idx} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-cyan-500/50 transition-all group shadow-lg">
-            <div className="relative aspect-[2/3] overflow-hidden bg-gray-800">
-              <img src={movie.poster} alt={movie.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-transparent p-4 pt-20">
-                <h3 className="text-xl font-bold text-white drop-shadow-md">{movie.title}</h3>
-                <span className="text-sm text-cyan-400 font-mono">{movie.year}</span>
-              </div>
-            </div>
-            <div className="p-5 space-y-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-cyan-300 text-xs font-bold uppercase tracking-wider">
-                  <Brain className="w-3 h-3" />
-                  <span>{movie.label_main}</span>
-                </div>
-                <p className="text-sm text-gray-300 leading-relaxed">{movie.reason_main}</p>
-              </div>
-              <div className="border-t border-gray-800 pt-3 space-y-1">
-                <div className="flex items-center gap-2 text-purple-300 text-xs font-bold uppercase tracking-wider">
-                  <Lightbulb className="w-3 h-3" />
-                  <span>{movie.label_sub}</span>
-                </div>
-                <p className="text-sm text-gray-300 leading-relaxed">{movie.reason_sub}</p>
-              </div>
-              
-              {movie.providers && movie.providers.length > 0 && (
-                <div className="border-t border-gray-800 pt-3">
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Available on (JP)</p>
-                  <div className="flex flex-wrap gap-2">
-                    {movie.providers.map((provider, pIdx) => (
-                      <a key={pIdx} href={provider.link} target="_blank" rel="noopener noreferrer" className="transition-transform hover:scale-110">
-                        <img src={provider.logo} alt={provider.name} title={`Watch on ${provider.name}`} className="w-8 h-8 rounded-md border border-gray-700 shadow-sm cursor-pointer" />
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-              <div className="border-t border-gray-800 pt-4 mt-2 flex justify-between items-center">
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Feedback</span>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => handleFeedback(movie.title, 'good')}
-                    className="p-2 rounded-full bg-gray-800 hover:bg-cyan-900/50 text-gray-400 hover:text-cyan-400 transition-colors"
-                    title="Good / 好き"
-                  >
-                    <ThumbsUp className="w-4 h-4" />
-                  </button>
-                  <button 
-                    onClick={() => handleFeedback(movie.title, 'bad')}
-                    className="p-2 rounded-full bg-gray-800 hover:bg-red-900/50 text-gray-400 hover:text-red-400 transition-colors"
-                    title="Bad / 好みじゃない"
-                  >
-                    <ThumbsDown className="w-4 h-4" />
-                  </button>
-                  <button 
-                    onClick={() => handleFeedback(movie.title, 'watched')}
-                    className="p-2 rounded-full bg-gray-800 hover:bg-green-900/50 text-gray-400 hover:text-green-400 transition-colors"
-                    title="Watched / 視聴済み"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+      {/* メインコンテンツ */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        {/* 感情分析チャート (データがあるときだけ表示) */}
+        {user && historyData.length > 0 && (
+          <div className="mb-10">
+            <MoodChart data={historyData} lang={lang} />
           </div>
-        ))}
-      </div>
-      {showLimitModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div 
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
-            onClick={() => setShowLimitModal(false)}
-          />
-          <div className="relative bg-gray-900 border border-red-500/30 rounded-2xl p-8 max-w-md w-full shadow-[0_0_50px_rgba(239,68,68,0.2)] animate-in zoom-in-95 duration-300">
-            <button 
-              onClick={() => setShowLimitModal(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center border border-red-500/20 mb-2">
-                <Ban className="w-8 h-8 text-red-500" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white tracking-wider mb-1">SYSTEM COOLDOWN</h2>
-                <p className="text-red-400 text-xs font-mono uppercase tracking-widest">Daily Limit Reached (3/3)</p>
-              </div>
-              <div className="bg-gray-950/50 rounded-lg p-4 border border-gray-800 text-left w-full">
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  本日の分析リソース上限に達しました。
-                  <br />
-                  過度な情報の摂取は、決定麻痺（Analysis Paralysis）を引き起こす可能性があります。
-                </p>
-                <div className="mt-3 pt-3 border-t border-gray-800 text-xs text-gray-500 font-mono">
-                  &gt; Next session available: <span className="text-cyan-400">Tomorrow 00:00 JST</span>
+        )}
+
+        {/* 入力フォーム: カード型・余白を活かしたデザイン */}
+        <div className="max-w-2xl mx-auto mb-12">
+          <div className="bg-typecast-surface rounded-2xl border border-typecast-border shadow-typecast overflow-hidden">
+            <div className="p-6 sm:p-8">
+              <div className="flex flex-col sm:flex-row gap-6">
+                <div className="sm:w-1/3">
+                  <label className="block text-sm font-medium text-typecast-text mb-2">{t(lang, 'mbtiType')}</label>
+                  <select
+                    value={mbti}
+                    onChange={(e) => setMbti(e.target.value)}
+                    className="w-full bg-typecast-bg border border-typecast-border rounded-lg px-4 py-3 text-sm text-typecast-text focus:border-typecast-accent focus:ring-2 focus:ring-typecast-accent/20 outline-none transition-all"
+                  >
+                    <optgroup label="Analysts (分析家)">
+                      <option value="INTJ">INTJ (建築家)</option>
+                      <option value="INTP">INTP (論理学者)</option>
+                      <option value="ENTJ">ENTJ (指揮官)</option>
+                      <option value="ENTP">ENTP (討論者)</option>
+                    </optgroup>
+                    <optgroup label="Diplomats (外交官)">
+                      <option value="INFJ">INFJ (提唱者)</option>
+                      <option value="INFP">INFP (仲介者)</option>
+                      <option value="ENFJ">ENFJ (主人公)</option>
+                      <option value="ENFP">ENFP (運動家)</option>
+                    </optgroup>
+                    <optgroup label="Sentinels (番人)">
+                      <option value="ISTJ">ISTJ (管理者)</option>
+                      <option value="ISFJ">ISFJ (擁護者)</option>
+                      <option value="ESTJ">ESTJ (幹部)</option>
+                      <option value="ESFJ">ESFJ (領事官)</option>
+                    </optgroup>
+                    <optgroup label="Explorers (探検家)">
+                      <option value="ISTP">ISTP (巨匠)</option>
+                      <option value="ISFP">ISFP (冒険家)</option>
+                      <option value="ESTP">ESTP (起業家)</option>
+                      <option value="ESFP">ESFP (エンターテイナー)</option>
+                    </optgroup>
+                  </select>
+                </div>
+                <div className="sm:flex-1">
+                  <label className="block text-sm font-medium text-typecast-text mb-2">{t(lang, 'mood')}</label>
+                  <textarea
+                    value={mood}
+                    onChange={(e) => setMood(e.target.value)}
+                    placeholder="例: 仕事で理不尽なことがあってムシャクシャしてるから、とにかく派手にぶっ壊す映画が見たい。"
+                    rows={3}
+                    className="w-full bg-typecast-bg border border-typecast-border rounded-lg px-4 py-3 text-sm text-typecast-text placeholder-typecast-muted focus:border-typecast-accent focus:ring-2 focus:ring-typecast-accent/20 outline-none transition-all resize-none"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleRecommend();
+                      }
+                    }}
+                  />
                 </div>
               </div>
               <button
-                onClick={() => setShowLimitModal(false)}
-                className="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 rounded-xl border border-gray-700 transition-all mt-2"
+                onClick={handleRecommend}
+                disabled={loading || !mood}
+                className="w-full mt-6 bg-typecast-accent hover:bg-typecast-accent-hover disabled:bg-typecast-border disabled:text-typecast-muted text-white font-medium py-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
               >
-                Acknowledge
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                <span>{t(lang, 'analyzeRecommend')}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 感情スコア & シェア (結果があるとき) */}
+        {movies.length > 0 && (
+          <div className="mb-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="bg-typecast-surface rounded-xl border border-typecast-border shadow-typecast px-6 py-4 flex items-center gap-6">
+              <div className="text-center border-r border-typecast-border pr-6">
+                <p className="text-xs text-typecast-muted font-medium mb-1">{t(lang, 'sentimentScore')}</p>
+                <p className={`text-2xl font-semibold ${
+                  (historyData[historyData.length - 1]?.score ?? 0) > 0 ? 'text-typecast-accent' :
+                  (historyData[historyData.length - 1]?.score ?? 0) < 0 ? 'text-red-500' : 'text-typecast-secondary'
+                }`}>
+                  {historyData[historyData.length - 1]?.score > 0 ? '+' : ''}
+                  {historyData[historyData.length - 1]?.score}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-typecast-muted font-medium mb-1">{t(lang, 'analysisResult')}</p>
+                <p className="text-sm font-medium text-typecast-text">
+                  {(historyData[historyData.length - 1]?.score ?? 0) >= 3 ? '非常にポジティブ・高揚状態' :
+                   (historyData[historyData.length - 1]?.score ?? 0) >= 1 ? 'ポジティブ・安定的' :
+                   (historyData[historyData.length - 1]?.score ?? 0) === 0 ? 'ニュートラル・平常心' :
+                   (historyData[historyData.length - 1]?.score ?? 0) >= -2 ? 'ネガティブ・疲労気味' :
+                   '非常にネガティブ・要休息'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-2 text-typecast-muted hover:text-typecast-accent border border-typecast-border hover:border-typecast-accent rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>{t(lang, 'shareOnX')}</span>
+            </button>
+          </div>
+        )}
+
+        {/* 映画カード: 画像重視・カード型 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {movies.map((movie, idx) => (
+            <div key={idx} className="bg-typecast-surface rounded-2xl overflow-hidden border border-typecast-border shadow-typecast hover:shadow-typecast-lg transition-all group">
+              <div className="relative aspect-[2/3] overflow-hidden">
+                <img src={movie.poster} alt={movie.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-16">
+                  <h3 className="text-lg font-semibold text-white">{movie.title}</h3>
+                  <span className="text-sm text-white/80">{movie.year}</span>
+                </div>
+              </div>
+              <div className="p-5 space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-typecast-accent text-xs font-medium">
+                    <Brain className="w-3.5 h-3.5" />
+                    <span>{movie.label_main}</span>
+                  </div>
+                  <p className="text-sm text-typecast-secondary leading-relaxed">{movie.reason_main}</p>
+                </div>
+                <div className="border-t border-typecast-border pt-3 space-y-2">
+                  <div className="flex items-center gap-2 text-typecast-muted text-xs font-medium">
+                    <Lightbulb className="w-3.5 h-3.5" />
+                    <span>{movie.label_sub}</span>
+                  </div>
+                  <p className="text-sm text-typecast-secondary leading-relaxed">{movie.reason_sub}</p>
+                </div>
+                {movie.providers && movie.providers.length > 0 && (
+                  <div className="border-t border-typecast-border pt-3">
+                    <p className="text-xs text-typecast-muted font-medium mb-2">{t(lang, 'availableInJP')}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {movie.providers.map((provider, pIdx) => (
+                        <a key={pIdx} href={provider.link} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+                          <img src={provider.logo} alt={provider.name} title={provider.name} className="w-8 h-8 rounded-lg object-contain border border-typecast-border" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="border-t border-typecast-border pt-3 flex justify-between items-center">
+                  <span className="text-xs text-typecast-muted">{t(lang, 'feedback')}</span>
+                  <div className="flex gap-1">
+                    <button onClick={() => handleFeedback(movie.title, 'good')} className="p-2 rounded-lg hover:bg-typecast-bg text-typecast-muted hover:text-typecast-accent transition-colors" title={t(lang, 'like')}>
+                      <ThumbsUp className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleFeedback(movie.title, 'bad')} className="p-2 rounded-lg hover:bg-typecast-bg text-typecast-muted hover:text-red-500 transition-colors" title={t(lang, 'dislike')}>
+                      <ThumbsDown className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleFeedback(movie.title, 'watched')} className="p-2 rounded-lg hover:bg-typecast-bg text-typecast-muted hover:text-green-600 transition-colors" title={t(lang, 'watched')}>
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
+      {/* レートリミットモーダル */}
+      {showLimitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowLimitModal(false)} />
+          <div className="relative bg-typecast-surface rounded-2xl p-8 max-w-md w-full shadow-typecast-lg border border-typecast-border">
+            <button onClick={() => setShowLimitModal(false)} className="absolute top-4 right-4 text-typecast-muted hover:text-typecast-text">
+              <X className="w-5 h-5" />
+            </button>
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center">
+                <Ban className="w-7 h-7 text-red-500" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-typecast-text mb-1">{t(lang, 'limitTitle')}</h2>
+                <p className="text-sm text-typecast-muted">{t(lang, 'limitSubtitle')}</p>
+              </div>
+              <div className="bg-typecast-bg rounded-lg p-4 text-left w-full">
+                <p className="text-sm text-typecast-secondary leading-relaxed">
+                  {t(lang, 'limitBody')}
+                </p>
+                <p className="mt-3 text-xs text-typecast-muted">{t(lang, 'limitNext')}</p>
+              </div>
+              <button onClick={() => setShowLimitModal(false)} className="w-full bg-typecast-accent hover:bg-typecast-accent-hover text-white font-medium py-3 rounded-lg">
+                {t(lang, 'close')}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* About モーダル */}
       {showAboutModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div 
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
-            onClick={() => setShowAboutModal(false)}
-          />
-          <div className="relative bg-gray-900 border border-gray-700 rounded-2xl p-8 max-w-lg w-full shadow-2xl animate-in zoom-in-95 duration-300">
-            <button 
-              onClick={() => setShowAboutModal(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"
-            >
-              <X className="w-6 h-6" />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowAboutModal(false)} />
+          <div className="relative bg-typecast-surface rounded-2xl p-8 max-w-lg w-full shadow-typecast-lg border border-typecast-border max-h-[90vh] overflow-y-auto">
+            <button onClick={() => setShowAboutModal(false)} className="absolute top-4 right-4 text-typecast-muted hover:text-typecast-text">
+              <X className="w-5 h-5" />
             </button>
-
-            <div className="text-center space-y-6">
+            <div className="space-y-6">
               <div className="flex flex-col items-center gap-3">
-                <div className="p-3 bg-cyan-900/20 rounded-full border border-cyan-500/30">
-                   <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
-                </div>
-                <h2 className="text-2xl font-bold text-white tracking-wider">About TYPECAST</h2>
+                <img src="/logo.png" alt="Logo" className="w-14 h-14 object-contain" />
+                <h2 className="text-xl font-semibold text-typecast-text">{t(lang, 'aboutHeading')}</h2>
               </div>
-
-              <div className="space-y-4 text-left bg-gray-950/50 p-6 rounded-xl border border-gray-800">
+              <div className="space-y-4 text-left bg-typecast-bg p-5 rounded-xl">
                 <div className="space-y-2">
-                  <h3 className="text-cyan-400 font-bold text-sm flex items-center gap-2">
-                    <Brain className="w-4 h-4" /> コンセプト
+                  <h3 className="text-typecast-accent font-medium text-sm flex items-center gap-2">
+                    <Brain className="w-4 h-4" /> {t(lang, 'aboutConceptTitle')}
                   </h3>
-                  <p className="text-gray-300 text-sm leading-relaxed">
-                    「検索疲れ」を終わらせるための、AI映画コンシェルジュです。<br/>
-                    あなたの <strong>MBTI（性格タイプ）</strong> と <strong>今の気分 (Mood)</strong> を分析し、
-                    膨大なデータベースから「論理的に」最適な一作を提案します。
+                  <p className="text-sm text-typecast-secondary leading-relaxed whitespace-pre-line">
+                    {t(lang, 'aboutConceptBody')}
                   </p>
                 </div>
-                
-                <div className="space-y-2 border-t border-gray-800 pt-4">
-                  <h3 className="text-cyan-400 font-bold text-sm flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" /> 特徴
+                <div className="space-y-2 border-t border-typecast-border pt-4">
+                  <h3 className="text-typecast-accent font-medium text-sm flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" /> {t(lang, 'aboutFeaturesTitle')}
                   </h3>
-                  <ul className="text-gray-300 text-sm list-disc list-inside space-y-1">
-                    <li>Google Gemini 2.0 Pro による深層心理分析</li>
-                    <li>気分に合わせた "Sentiment Score" の算出</li>
-                    <li>ネタバレなしの「観るべき理由」を解説</li>
+                  <ul className="text-sm text-typecast-secondary list-disc list-inside space-y-1">
+                    <li>{t(lang, 'aboutFeature1')}</li>
+                    <li>{t(lang, 'aboutFeature2')}</li>
+                    <li>{t(lang, 'aboutFeature3')}</li>
                   </ul>
                 </div>
               </div>
-
-              <div className="pt-2">
-                <p className="text-xs text-gray-500">
-                  Developed by Indie Developer. <br/>
-                  Powered by TMDB & Gemini API.
-                </p>
-              </div>
+              <p className="text-xs text-typecast-muted text-center">{t(lang, 'poweredBy')}</p>
             </div>
           </div>
         </div>
       )}
-      <footer className="max-w-6xl mx-auto mt-12 pb-8 text-center text-gray-500 text-xs">
-        <p>&copy; 2025 TYPECAST. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
-        <div className="mt-2 space-x-4">
-          <a href="/terms.html" target="_blank" className="hover:text-cyan-400 transition-colors">Terms & Privacy</a>
-          <a href="mailto:hakuma1.one@gmail.com" className="hover:text-cyan-400 transition-colors">Contact</a>
-         </div>
+
+      {/* フッター */}
+      <footer className="border-t border-typecast-border bg-typecast-surface mt-16">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-8">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <img src="/logo.png" alt="Typecast Logo" className="w-8 h-8 object-contain" />
+                <span className="font-semibold tracking-tight text-typecast-text">TYPECAST</span>
+              </div>
+              <p className="text-sm text-typecast-muted">{t(lang, 'tmdbDisclaimer')}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6 w-full md:w-auto">
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-typecast-text">Info</p>
+                <button
+                  onClick={() => setShowAboutModal(true)}
+                  className="flex items-center gap-2 text-sm text-typecast-muted hover:text-typecast-accent transition-colors"
+                >
+                  <Info className="w-4 h-4" />
+                  {t(lang, 'aboutTitle')}
+                </button>
+                <a href="/terms.html" target="_blank" className="block text-sm text-typecast-muted hover:text-typecast-accent transition-colors">
+                  {t(lang, 'termsPrivacy')}
+                </a>
+              </div>
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-typecast-text">Contact</p>
+                <a href="mailto:hakuma1.one@gmail.com" className="block text-sm text-typecast-muted hover:text-typecast-accent transition-colors">
+                  {t(lang, 'contact')}
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 pt-6 border-t border-typecast-border flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-xs text-typecast-muted">&copy; 2025 TYPECAST</p>
+            <div className="flex items-center gap-3 text-xs text-typecast-muted">
+              <span>{lang === 'ja' ? '言語' : 'Language'}: {lang === 'ja' ? '日本語' : 'EN'}</span>
+              <span>•</span>
+              <span>{darkMode ? (lang === 'ja' ? 'ダーク' : 'Dark') : (lang === 'ja' ? 'ライト' : 'Light')}</span>
+            </div>
+          </div>
+        </div>
       </footer>
     </div>
   );

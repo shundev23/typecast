@@ -3,6 +3,7 @@ package handler
 import (
 	"log"
 	"net/http"
+	"strings"
 	"typecast/internal/logic"
 	"typecast/internal/model"
 
@@ -56,7 +57,14 @@ func (h *RecommendHandler) Recommend(c echo.Context) error {
 	geminiResp, err := h.Gemini.GetRecommendations(c.Request().Context(), req.MBTI, req.Mood, req.IgnoreMovies)
 	if err != nil {
 		log.Printf("[Recommend] error=gemini_failed err=%v", err)
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		errStr := err.Error()
+		// Gemini API のクォータ超過は 429 で返し、フロントで専用メッセージを出せるようにする
+		if strings.Contains(errStr, "429") || strings.Contains(errStr, "quota") || strings.Contains(errStr, "Quota exceeded") {
+			return c.JSON(http.StatusTooManyRequests, map[string]string{
+				"error": "Gemini APIの利用制限に達しました。しばらく待ってから再試行するか、Google AI Studioで利用量を確認してください。",
+			})
+		}
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": errStr})
 	}
 	log.Printf("[Recommend] gemini_ok movies=%d", len(geminiResp.Movies))
 
