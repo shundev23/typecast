@@ -38,6 +38,24 @@ export type I18nKey =
   | 'remainingToday'
   | 'geminiQuotaTitle'
   | 'geminiQuotaBody'
+  | 'accountDelete'
+  | 'accountDeleteTitle'
+  | 'accountDeleteBody'
+  | 'accountDeleteHint'
+  | 'accountDeleteType'
+  | 'accountDeleteConfirm'
+  | 'accountDeleteCancel'
+  | 'accountDeleteSuccess'
+  | 'accountDeleteFailed'
+  | 'accountDeleteDeletedTitle'
+  | 'accountDeleteDeleted1'
+  | 'accountDeleteDeleted2'
+  | 'accountDeleteDeleted3'
+  | 'accountDeleteDeleted4'
+  | 'accountDeleteNotDeletedTitle'
+  | 'accountDeleteNotDeleted1'
+  | 'accountDeleteNotDeleted2'
+  | 'accountDeleteAcknowledge'
   | 'feedbackSaved'
   | 'feedbackFailed';
 
@@ -81,6 +99,24 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     remainingToday: '本日は残り {{n}} 回です',
     geminiQuotaTitle: 'AIの利用制限に達しました',
     geminiQuotaBody: 'しばらく待ってから再試行するか、利用量を確認してください。',
+    accountDelete: 'アカウント削除',
+    accountDeleteTitle: 'アカウントを削除しますか？',
+    accountDeleteBody: 'この操作は取り消せません。履歴・フィードバック・利用状況などが削除されます。',
+    accountDeleteHint: '確認のため、下に DELETE と入力してください。',
+    accountDeleteType: 'DELETE と入力',
+    accountDeleteConfirm: '削除する',
+    accountDeleteCancel: 'キャンセル',
+    accountDeleteSuccess: 'アカウントを削除しました',
+    accountDeleteFailed: 'アカウント削除に失敗しました',
+    accountDeleteDeletedTitle: '削除されるもの',
+    accountDeleteDeleted1: 'レコメンド履歴（users/{uid}/history）',
+    accountDeleteDeleted2: 'フィードバック（users/{uid}/feedbacks）',
+    accountDeleteDeleted3: '本日の残り回数・利用状況（users/{uid}）',
+    accountDeleteDeleted4: 'ログイン情報（Firebase Authentication）',
+    accountDeleteNotDeletedTitle: '削除されないもの',
+    accountDeleteNotDeleted1: '過去に発行したシェアリンク（現状ユーザーと紐づかないため）',
+    accountDeleteNotDeleted2: '端末に保存された設定（言語/テーマなど）は残ります',
+    accountDeleteAcknowledge: '上記を理解し、取り消せないことに同意します',
     feedbackSaved: 'を記録しました！',
     feedbackFailed: '評価の送信に失敗しました',
   },
@@ -123,6 +159,24 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     remainingToday: '{{n}} recommendations left today',
     geminiQuotaTitle: 'AI quota reached',
     geminiQuotaBody: 'Please wait and try again later, or check your quota.',
+    accountDelete: 'Delete account',
+    accountDeleteTitle: 'Delete your account?',
+    accountDeleteBody: 'This action cannot be undone. Your history, feedback, and usage data will be deleted.',
+    accountDeleteHint: 'To confirm, type DELETE below.',
+    accountDeleteType: 'Type DELETE',
+    accountDeleteConfirm: 'Delete',
+    accountDeleteCancel: 'Cancel',
+    accountDeleteSuccess: 'Account deleted',
+    accountDeleteFailed: 'Failed to delete account',
+    accountDeleteDeletedTitle: 'What will be deleted',
+    accountDeleteDeleted1: 'Recommendation history (users/{uid}/history)',
+    accountDeleteDeleted2: 'Feedback (users/{uid}/feedbacks)',
+    accountDeleteDeleted3: 'Daily usage / remaining count (users/{uid})',
+    accountDeleteDeleted4: 'Sign-in account (Firebase Authentication)',
+    accountDeleteNotDeletedTitle: 'What will NOT be deleted',
+    accountDeleteNotDeleted1: 'Previously created share links (not tied to a user yet)',
+    accountDeleteNotDeleted2: 'Device settings saved locally (language/theme) remain',
+    accountDeleteAcknowledge: 'I understand and agree this cannot be undone',
     feedbackSaved: ' saved!',
     feedbackFailed: 'Failed to send feedback',
   },

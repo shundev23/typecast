@@ -7,6 +7,7 @@ import { auth, googleProvider } from './firebase';
 // チャートコンポーネント
 import { MoodChart } from './components/MoodChart';
 // Services
+import { accountService } from './services/account';
 import { feedbackService } from './services/feedback';
 import { historyService } from './services/history';
 import { recommendService } from './services/recommend';
@@ -29,6 +30,10 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [usage, setUsage] = useState<{ limit: number; count: number; remaining: number } | null>(null);
   const [showGeminiQuotaModal, setShowGeminiQuotaModal] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteAcknowledge, setDeleteAcknowledge] = useState(false);
   
   // チャート用データ
   const [historyData, setHistoryData] = useState<HistoryItem[]>([]);
@@ -97,6 +102,33 @@ function App() {
       await signOut(auth);
     } catch (error) {
       console.error("Logout failed", error);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    if (deleteConfirmText.trim().toUpperCase() !== 'DELETE') return;
+
+    setDeletingAccount(true);
+    try {
+      const token = await user.getIdToken();
+      await accountService.deleteAccount(token);
+      await signOut(auth);
+
+      // UI state cleanup
+      setMovies([]);
+      setMood('');
+      setHistoryData([]);
+      setUsage(null);
+
+      setShowDeleteAccountModal(false);
+      setDeleteConfirmText('');
+      alert(t(lang, 'accountDeleteSuccess'));
+    } catch (error) {
+      console.error('Delete account failed', error);
+      alert(t(lang, 'accountDeleteFailed'));
+    } finally {
+      setDeletingAccount(false);
     }
   };
 
@@ -582,6 +614,106 @@ function App() {
         </div>
       )}
 
+      {/* アカウント削除モーダル */}
+      {showDeleteAccountModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => {
+              if (!deletingAccount) setShowDeleteAccountModal(false);
+            }}
+          />
+          <div className="relative bg-typecast-surface rounded-2xl p-8 max-w-md w-full shadow-typecast-lg border border-typecast-border">
+            <button
+              onClick={() => setShowDeleteAccountModal(false)}
+              className="absolute top-4 right-4 text-typecast-muted hover:text-typecast-text disabled:opacity-50"
+              disabled={deletingAccount}
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="space-y-5">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                  <Ban className="w-5 h-5 text-red-500" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-typecast-text">{t(lang, 'accountDeleteTitle')}</h2>
+                  <p className="mt-1 text-sm text-typecast-muted">{t(lang, 'accountDeleteBody')}</p>
+                  {user?.email && (
+                    <p className="mt-2 text-xs text-typecast-muted">
+                      {user.email}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-typecast-bg rounded-lg p-4 border border-typecast-border space-y-3">
+                <div>
+                  <p className="text-xs font-semibold text-typecast-text">{t(lang, 'accountDeleteDeletedTitle')}</p>
+                  <ul className="mt-2 text-sm text-typecast-secondary list-disc list-inside space-y-1">
+                    <li>{t(lang, 'accountDeleteDeleted1')}</li>
+                    <li>{t(lang, 'accountDeleteDeleted2')}</li>
+                    <li>{t(lang, 'accountDeleteDeleted3')}</li>
+                    <li>{t(lang, 'accountDeleteDeleted4')}</li>
+                  </ul>
+                </div>
+                <div className="pt-3 border-t border-typecast-border">
+                  <p className="text-xs font-semibold text-typecast-text">{t(lang, 'accountDeleteNotDeletedTitle')}</p>
+                  <ul className="mt-2 text-sm text-typecast-secondary list-disc list-inside space-y-1">
+                    <li>{t(lang, 'accountDeleteNotDeleted1')}</li>
+                    <li>{t(lang, 'accountDeleteNotDeleted2')}</li>
+                  </ul>
+                </div>
+              </div>
+
+              <label className="flex items-start gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 rounded border-typecast-border"
+                  checked={deleteAcknowledge}
+                  onChange={(e) => setDeleteAcknowledge(e.target.checked)}
+                  disabled={deletingAccount}
+                />
+                <span className="text-sm text-typecast-secondary">{t(lang, 'accountDeleteAcknowledge')}</span>
+              </label>
+
+              <div className="bg-typecast-surface rounded-lg p-4 border border-typecast-border">
+                <p className="text-sm text-typecast-secondary">{t(lang, 'accountDeleteHint')}</p>
+                <input
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder={t(lang, 'accountDeleteType')}
+                  className="mt-3 w-full bg-typecast-bg border border-typecast-border rounded-lg px-3 py-2 text-sm text-typecast-text placeholder-typecast-muted focus:border-typecast-accent focus:ring-2 focus:ring-typecast-accent/20 outline-none"
+                  disabled={deletingAccount}
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteAccountModal(false);
+                    setDeleteConfirmText('');
+                    setDeleteAcknowledge(false);
+                  }}
+                  className="flex-1 border border-typecast-border rounded-lg py-3 text-sm font-medium text-typecast-muted hover:text-typecast-text hover:bg-typecast-bg transition-colors"
+                  disabled={deletingAccount}
+                >
+                  {t(lang, 'accountDeleteCancel')}
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-typecast-border disabled:text-typecast-muted text-white rounded-lg py-3 text-sm font-medium transition-colors"
+                  disabled={deletingAccount || !deleteAcknowledge || deleteConfirmText.trim().toUpperCase() !== 'DELETE'}
+                >
+                  {deletingAccount ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : t(lang, 'accountDeleteConfirm')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* フッター */}
       <footer className="border-t border-typecast-border bg-typecast-surface mt-10 sm:mt-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
@@ -607,6 +739,15 @@ function App() {
                 <a href="/terms.html" target="_blank" className="block text-sm text-typecast-muted hover:text-typecast-accent transition-colors">
                   {t(lang, 'termsPrivacy')}
                 </a>
+                {user && (
+                  <button
+                    onClick={() => setShowDeleteAccountModal(true)}
+                    className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700 transition-colors"
+                  >
+                    <Ban className="w-4 h-4" />
+                    {t(lang, 'accountDelete')}
+                  </button>
+                )}
               </div>
               <div className="space-y-3">
                 <p className="text-xs font-semibold text-typecast-text">Contact</p>

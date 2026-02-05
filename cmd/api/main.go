@@ -116,6 +116,7 @@ func main() {
 	historyHandler := &handler.HistoryHandler{Service: historyService}
 	shareHandler := handler.NewShareHandler(shareService)
 	feedbackHandler := handler.NewFeedbackHandler(feedbackService)
+	accountHandler := handler.NewAccountHandler(firebaseApp, userService.Client)
 
 	// ルーティング
 	e.GET("/", func(c echo.Context) error {
@@ -138,6 +139,9 @@ func main() {
 
 	e.POST("/api/feedback", feedbackHandler.Save, authMiddleware)
 	e.GET("/api/feedback", feedbackHandler.GetAll, authMiddleware)
+
+	// アカウント削除
+	e.DELETE("/api/account", accountHandler.DeleteAccount, authMiddleware)
 
 	// サーバー起動
 	port := os.Getenv("PORT")
