@@ -51,6 +51,11 @@ func main() {
 	if databaseID == "" {
 		log.Fatal("Error: FIRESTORE_DB_NAME is not set")
 	}
+	// GitHub Secrets では bash エラー回避のため "default" を推奨し、
+	// 実際の Firestore データベースID "(default)" にここで正規化する。
+	if databaseID == "default" {
+		databaseID = "(default)"
+	}
 
 	conf := &firebase.Config{ProjectID: projectID}
 
