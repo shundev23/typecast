@@ -2,6 +2,7 @@ package logic
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -44,7 +45,7 @@ func NewGeminiService(ctx context.Context) (*GeminiService, error) {
 func (s *GeminiService) GetRecommendations(ctx context.Context, mbti string, mood string, ignoreMovies []string) (model.RecommendResponse, error) {
 	// 心理機能を取得
 	funcs := GetFunctions(mbti)
-	
+
 	// 除外リストの作成
 	ignoreStr := ""
 	if len(ignoreMovies) > 0 {
@@ -56,11 +57,22 @@ func (s *GeminiService) GetRecommendations(ctx context.Context, mbti string, moo
 		}
 	}
 
-	// プロンプトは設定（環境変数）でのみ保持。リポジトリには含めない。
+	// プロンプトは環境変数でのみ保持。リポジトリには含めない。
+	// 互換性のため:
+	// - まず GEMINI_PROMPT_TEMPLATE を見る（ローカル .env 用）
+	// - 無ければ GEMINI_PROMPT_TEMPLATE_B64 を base64 デコードして使う（本番 / CI 用）
 	// プレースホルダ順: mbti, Main, Sub, mood, ignoreStr, Main, Sub。改行は \n で渡す。
 	template := os.Getenv("GEMINI_PROMPT_TEMPLATE")
 	if template == "" {
-		return model.RecommendResponse{}, fmt.Errorf("GEMINI_PROMPT_TEMPLATE is not set")
+		b64 := os.Getenv("GEMINI_PROMPT_TEMPLATE_B64")
+		if b64 == "" {
+			return model.RecommendResponse{}, fmt.Errorf("GEMINI_PROMPT_TEMPLATE or GEMINI_PROMPT_TEMPLATE_B64 is not set")
+		}
+		decoded, err := base64.StdEncoding.DecodeString(b64)
+		if err != nil {
+			return model.RecommendResponse{}, fmt.Errorf("failed to decode GEMINI_PROMPT_TEMPLATE_B64: %w", err)
+		}
+		template = string(decoded)
 	}
 	template = strings.ReplaceAll(template, "\\n", "\n")
 	prompt := fmt.Sprintf(template, mbti, funcs.Main, funcs.Sub, mood, ignoreStr, funcs.Main, funcs.Sub)
