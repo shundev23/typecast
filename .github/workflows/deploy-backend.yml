@@ -55,21 +55,9 @@ jobs:
       # 6. Cloud Runへデプロイ（本番環境変数はここで一元管理）
       - name: Deploy to Cloud Run
         run: |
-          # 環境変数ファイルを作成（特殊文字や改行を安全に扱うため）
-          cat << 'EOF' > env.vars
-          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-          TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
-          GEMINI_PROMPT_TEMPLATE=${{ secrets.GEMINI_PROMPT_TEMPLATE }}
-          VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-          FIRESTORE_DB_NAME=${{ secrets.FIRESTORE_DB_NAME }}
-          FRONTEND_URL=${{ secrets.PROD_FRONTEND_URL }}
-          API_BASE_URL=${{ secrets.PROD_API_BASE_URL }}
-          ACCOUNT_RECREATE_COOLDOWN_HOURS=24
-          EOF
-
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image ${{ env.IMAGE_TAG }} \
             --region ${{ env.REGION }} \
             --platform managed \
             --allow-unauthenticated \
-            --env-vars-file env.vars
+            --set-env-vars GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},TMDB_API_KEY=${{ secrets.TMDB_API_KEY }},GEMINI_PROMPT_TEMPLATE=${{ secrets.GEMINI_PROMPT_TEMPLATE }},VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }},FIRESTORE_DB_NAME=${{ secrets.FIRESTORE_DB_NAME }},FRONTEND_URL=${{ secrets.PROD_FRONTEND_URL }},API_BASE_URL=${{ secrets.PROD_API_BASE_URL }},ACCOUNT_RECREATE_COOLDOWN_HOURS=24
