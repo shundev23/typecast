@@ -5,13 +5,16 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
+	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go/v4"
 	"github.com/labstack/echo/v4"
+	"typecast/internal/security"
 )
 
 // AuthMiddleware : Firebase ID Tokenを検証するミドルウェア
-func AuthMiddleware(app *firebase.App) echo.MiddlewareFunc {
+func AuthMiddleware(app *firebase.App, fs *firestore.Client) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			// 1. Authorizationヘッダーの取得
@@ -40,9 +43,35 @@ func AuthMiddleware(app *firebase.App) echo.MiddlewareFunc {
 				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid or expired token"})
 			}
 
+			// 追加セーフティ: 削除済み（リセマラ）対策
+			// 同一プロバイダアカウントが削除済みならクールダウン中は拒否する
+			if fs != nil {
+				providerID, providerUID := security.ExtractPrimaryIdentity(token.Claims)
+				if providerID != "" && providerUID != "" {
+					docID := security.DeletedIdentityDocID(providerID, providerUID)
+					doc, err := fs.Collection("deleted_identities").Doc(docID).Get(context.Background())
+					if err == nil && doc.Exists() {
+						var rec struct {
+							BlockForever  bool      `firestore:"block_forever"`
+							CooldownUntil time.Time `firestore:"cooldown_until"`
+						}
+						if err := doc.DataTo(&rec); err == nil {
+							now := time.Now()
+							if rec.BlockForever || (!rec.CooldownUntil.IsZero() && now.Before(rec.CooldownUntil)) {
+								return c.JSON(http.StatusForbidden, map[string]any{
+									"error":         "このアカウントは削除済みのため、一定時間APIを利用できません。",
+									"code":          "account_deleted_cooldown",
+									"cooldownUntil": rec.CooldownUntil,
+								})
+							}
+						}
+					}
+				}
+			}
+
 			// 4. 検証成功 → コンテキストにUIDをセットして次の処理へ
 			c.Set("uid", token.UID)
-			
+
 			return next(c)
 		}
 	}

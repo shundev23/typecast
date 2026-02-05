@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"typecast/internal/logic"
@@ -75,8 +76,14 @@ func (h *ShareHandler) HandleShareLink(c echo.Context) error {
 	if isBot(ua) {
 		// Botの場合: OGPメタタグを含んだHTMLを返す
 		// 画像URLを構築
-		imgURL := fmt.Sprintf("%s/api/ogp?title=%s&mood=%s&score=%d", 
-			h.APIBaseURL, data.Title, data.Mood, data.Score)
+		// タイトルやムードに日本語・スペース等が含まれても壊れないようURLエンコードする
+		imgURL := fmt.Sprintf(
+			"%s/api/ogp?title=%s&mood=%s&score=%d",
+			h.APIBaseURL,
+			url.QueryEscape(data.Title),
+			url.QueryEscape(data.Mood),
+			data.Score,
+		)
 		
 		html := fmt.Sprintf(`<!DOCTYPE html>
 <html>
@@ -88,12 +95,14 @@ func (h *ShareHandler) HandleShareLink(c echo.Context) error {
 	<meta name="twitter:description" content="Mood: %s | Sentiment: %d" />
 	<meta name="twitter:image" content="%s" />
 	<meta property="og:title" content="TYPECAST: %s" />
+	<meta property="og:description" content="Mood: %s | Sentiment: %d" />
 	<meta property="og:image" content="%s" />
+	<meta property="og:type" content="website" />
 </head>
 <body>
 	<h1>Redirecting...</h1>
 </body>
-</html>`, data.Title, data.Title, data.Mood, data.Score, imgURL, data.Title, imgURL)
+</html>`, data.Title, data.Title, data.Mood, data.Score, imgURL, data.Title, data.Mood, data.Score, imgURL)
 
 		return c.HTML(http.StatusOK, html)
 	}

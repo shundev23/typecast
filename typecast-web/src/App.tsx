@@ -112,7 +112,7 @@ function App() {
     setDeletingAccount(true);
     try {
       const token = await user.getIdToken();
-      await accountService.deleteAccount(token);
+      await accountService.deleteAccount(token, deleteConfirmText.trim());
       await signOut(auth);
 
       // UI state cleanup

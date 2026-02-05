@@ -79,10 +79,6 @@ func main() {
 	shareService := logic.NewShareService(client)
 	feedbackService := logic.NewFeedbackService(client)
 
-	if err != nil {
-		log.Fatal("Failed to create Share service:", err)
-	}
-
 	historyService, err := logic.NewHistoryService(ctx, projectID, databaseID, firestoreOpts...)
 	if err != nil {
 		log.Fatal("Failed to create History service:", err)
@@ -124,7 +120,7 @@ func main() {
 	})
 
 	// OGP生成はTwitter等のBotが見に来るため認証なしにする
-	authMiddleware := middleware.AuthMiddleware(firebaseApp)
+	authMiddleware := middleware.AuthMiddleware(firebaseApp, userService.Client)
 
 	e.POST("/api/recommend", h.Recommend, authMiddleware)
 
