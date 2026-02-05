@@ -4,6 +4,7 @@ export type I18nKey =
   | 'login'
   | 'loginWithGoogle'
   | 'logout'
+  | 'account'
   | 'mbtiType'
   | 'mood'
   | 'analyzeRecommend'
@@ -64,6 +65,7 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     login: 'ログイン',
     loginWithGoogle: 'Google でログイン',
     logout: 'ログアウト',
+    account: 'アカウント',
     mbtiType: 'MBTI タイプ',
     mood: '今の気分',
     analyzeRecommend: '分析して映画を提案',
@@ -124,6 +126,7 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     login: 'Log in',
     loginWithGoogle: 'Log in with Google',
     logout: 'Log out',
+    account: 'Account',
     mbtiType: 'MBTI Type',
     mood: 'Mood',
     analyzeRecommend: 'Analyze & Recommend',

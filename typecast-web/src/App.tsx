@@ -30,6 +30,7 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [usage, setUsage] = useState<{ limit: number; count: number; remaining: number } | null>(null);
   const [showGeminiQuotaModal, setShowGeminiQuotaModal] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -282,18 +283,53 @@ function App() {
               <span className="font-medium">{darkMode ? 'Light' : 'Dark'}</span>
             </button>
             {user ? (
-              <div className="flex items-center gap-2">
-                {user.photoURL ? (
-                  <img src={user.photoURL} alt="User" className="w-9 h-9 rounded-full border border-typecast-border" />
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-typecast-border flex items-center justify-center">
-                    <UserIcon className="w-5 h-5 text-typecast-muted" />
+              <div className="relative">
+                <button
+                  onClick={() => setShowProfileMenu((v) => !v)}
+                  className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-typecast-bg transition-colors"
+                >
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt="User" className="w-9 h-9 rounded-full border border-typecast-border" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-typecast-border flex items-center justify-center">
+                      <UserIcon className="w-5 h-5 text-typecast-muted" />
+                    </div>
+                  )}
+                  <span className="text-sm font-medium text-typecast-text hidden md:block max-w-[140px] truncate">
+                    {user.displayName || user.email}
+                  </span>
+                </button>
+                {showProfileMenu && (
+                  <div className="absolute right-0 mt-2 w-64 bg-typecast-surface border border-typecast-border rounded-xl shadow-typecast z-40">
+                    <div className="px-4 py-3 border-b border-typecast-border">
+                      <p className="text-xs font-semibold text-typecast-muted">{t(lang, 'account')}</p>
+                      <p className="mt-1 text-sm text-typecast-text truncate">{user.displayName || user.email}</p>
+                      {user.email && (
+                        <p className="text-xs text-typecast-muted truncate">{user.email}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={async () => {
+                        setShowProfileMenu(false);
+                        await handleLogout();
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-typecast-muted hover:text-typecast-text hover:bg-typecast-bg transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>{t(lang, 'logout')}</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        setShowDeleteAccountModal(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-typecast-bg transition-colors border-t border-typecast-border"
+                    >
+                      <Ban className="w-4 h-4" />
+                      <span>{t(lang, 'accountDelete')}</span>
+                    </button>
                   </div>
                 )}
-                <span className="text-sm font-medium text-typecast-text hidden md:block max-w-[120px] truncate">{user.displayName}</span>
-                <button onClick={handleLogout} className="p-2 rounded-full hover:bg-typecast-bg text-typecast-muted hover:text-typecast-accent transition-colors">
-                  <LogOut className="w-4 h-4" />
-                </button>
               </div>
             ) : (
               <button
@@ -739,15 +775,6 @@ function App() {
                 <a href="/terms.html" target="_blank" className="block text-sm text-typecast-muted hover:text-typecast-accent transition-colors">
                   {t(lang, 'termsPrivacy')}
                 </a>
-                {user && (
-                  <button
-                    onClick={() => setShowDeleteAccountModal(true)}
-                    className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700 transition-colors"
-                  >
-                    <Ban className="w-4 h-4" />
-                    {t(lang, 'accountDelete')}
-                  </button>
-                )}
               </div>
               <div className="space-y-3">
                 <p className="text-xs font-semibold text-typecast-text">Contact</p>
