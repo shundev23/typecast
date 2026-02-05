@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"typecast/internal/handler"
 	"typecast/internal/logic"
@@ -95,10 +96,20 @@ func main() {
 	defer userService.Close()
 
 	// 2.Handlerの初期化
+	dailyLimit := 3
+	if v := os.Getenv("DAILY_RECOMMEND_LIMIT"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			dailyLimit = n
+		} else {
+			log.Printf("Warn: DAILY_RECOMMEND_LIMIT is invalid (%q). Using default=%d", v, dailyLimit)
+		}
+	}
+
 	h := &handler.RecommendHandler{
-		Gemini: geminiService,
-		Tmdb:   tmdbService,
-		User:   userService,
+		Gemini:              geminiService,
+		Tmdb:                tmdbService,
+		User:                userService,
+		DailyRecommendLimit: dailyLimit,
 	}
 
 	ogpHandler := handler.NewOgpHandler(ogpService)

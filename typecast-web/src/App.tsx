@@ -14,7 +14,7 @@ import { shareService } from './services/share';
 // Types & Utils
 import type { Movie, HistoryItem } from './types';
 import { ApiError } from './lib/apiClient';
-import { t, type Lang } from './i18n';
+import { t, tf, type Lang } from './i18n';
 
 function App() {
   // --- State管理 ---
@@ -27,6 +27,8 @@ function App() {
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [lang, setLang] = useState<Lang>('ja');
   const [darkMode, setDarkMode] = useState(false);
+  const [usage, setUsage] = useState<{ limit: number; count: number; remaining: number } | null>(null);
+  const [showGeminiQuotaModal, setShowGeminiQuotaModal] = useState(false);
   
   // チャート用データ
   const [historyData, setHistoryData] = useState<HistoryItem[]>([]);
@@ -109,6 +111,7 @@ function App() {
     setLoading(true);
     setMovies([]);
     setShowLimitModal(false);
+    setShowGeminiQuotaModal(false);
 
     try {
       const token = await user.getIdToken();
@@ -118,6 +121,9 @@ function App() {
       const data = await recommendService.analyze(mbti, mood, ignoreMovies, token);
 
       setMovies(data.movies);
+      if (typeof data.limit === 'number' && typeof data.count === 'number' && typeof data.remaining === 'number') {
+        setUsage({ limit: data.limit, count: data.count, remaining: data.remaining });
+      }
 
       // API経由で履歴を保存
       if (data.movies.length > 0) {
@@ -147,11 +153,24 @@ function App() {
 
       // ★ ApiErrorをキャッチして 429 (レートリミット) を判定
       if (error instanceof ApiError && error.status === 429) {
+        const data = error.data as { code?: string; limit?: number; count?: number; remaining?: number; error?: string } | null;
+        if (data?.code === 'daily_limit') {
+          if (typeof data.limit === 'number' && typeof data.count === 'number' && typeof data.remaining === 'number') {
+            setUsage({ limit: data.limit, count: data.count, remaining: data.remaining });
+          }
+          setShowLimitModal(true);
+          return;
+        }
+        if (data?.code === 'gemini_quota') {
+          setShowGeminiQuotaModal(true);
+          return;
+        }
+        // 互換: code が無い 429 は従来通り limit モーダル
         setShowLimitModal(true);
         return;
       }
       
-      alert('エラーが発生しました');
+      alert(t(lang, 'genericError'));
     } finally {
       setLoading(false);
     }
@@ -355,6 +374,22 @@ function App() {
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
                 <span>{t(lang, 'analyzeRecommend')}</span>
               </button>
+
+              {/* 日次制限の見える化（成功後に表示） */}
+              {user && usage && (
+                <div className="mt-4 flex items-center justify-between gap-3 text-sm">
+                  <div className="text-typecast-muted">
+                    <span className="font-medium text-typecast-text">{tf(lang, 'remainingToday', { n: usage.remaining })}</span>
+                    <span className="ml-2 text-xs">({usage.count}/{usage.limit})</span>
+                  </div>
+                  <div className="w-28 h-2 bg-typecast-border rounded-full overflow-hidden" aria-hidden>
+                    <div
+                      className="h-full bg-typecast-accent"
+                      style={{ width: `${Math.min((usage.count / Math.max(usage.limit, 1)) * 100, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -465,7 +500,10 @@ function App() {
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-typecast-text mb-1">{t(lang, 'limitTitle')}</h2>
-                <p className="text-sm text-typecast-muted">{t(lang, 'limitSubtitle')}</p>
+                <p className="text-sm text-typecast-muted">
+                  {t(lang, 'limitSubtitle')}
+                  {usage ? <span className="ml-2 text-xs">({usage.count}/{usage.limit})</span> : null}
+                </p>
               </div>
               <div className="bg-typecast-bg rounded-lg p-4 text-left w-full">
                 <p className="text-sm text-typecast-secondary leading-relaxed">
@@ -474,6 +512,30 @@ function App() {
                 <p className="mt-3 text-xs text-typecast-muted">{t(lang, 'limitNext')}</p>
               </div>
               <button onClick={() => setShowLimitModal(false)} className="w-full bg-typecast-accent hover:bg-typecast-accent-hover text-white font-medium py-3 rounded-lg">
+                {t(lang, 'close')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Gemini 利用制限モーダル */}
+      {showGeminiQuotaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowGeminiQuotaModal(false)} />
+          <div className="relative bg-typecast-surface rounded-2xl p-8 max-w-md w-full shadow-typecast-lg border border-typecast-border">
+            <button onClick={() => setShowGeminiQuotaModal(false)} className="absolute top-4 right-4 text-typecast-muted hover:text-typecast-text">
+              <X className="w-5 h-5" />
+            </button>
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-14 h-14 bg-typecast-bg rounded-full flex items-center justify-center">
+                <Ban className="w-7 h-7 text-typecast-accent" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-typecast-text mb-1">{t(lang, 'geminiQuotaTitle')}</h2>
+                <p className="text-sm text-typecast-muted">{t(lang, 'geminiQuotaBody')}</p>
+              </div>
+              <button onClick={() => setShowGeminiQuotaModal(false)} className="w-full bg-typecast-accent hover:bg-typecast-accent-hover text-white font-medium py-3 rounded-lg">
                 {t(lang, 'close')}
               </button>
             </div>

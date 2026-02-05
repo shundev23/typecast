@@ -56,7 +56,7 @@ TYPECASTは、MBTIの心理機能（Ti, Ne, Ni, Te など）を刺激するか�
 | レイヤー | 役割 |
 |---------|------|
 | **Frontend** | React (Vite), Firebase Auth, 履歴・レコメンド・シェア・フィードバックのAPI呼び出し |
-| **API (Echo)** | 認証ミドルウェア、レート制限（1日3回）、ルーティング |
+| **API (Echo)** | 認証ミドルウェア、レート制限（1日N回 / `DAILY_RECOMMEND_LIMIT`）、ルーティング |
 | **Logic** | Gemini（レコメンド・感情スコア）、TMDB（メタデータ）、Firestore（履歴・ユーザー・シェア・OGP・フィードバック） |
 | **Data** | Firestore（ユーザー、履歴、シェア、フィードバック）、環境変数（APIキー等） |
 

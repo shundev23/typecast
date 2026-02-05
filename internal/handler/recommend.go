@@ -14,6 +14,8 @@ type RecommendHandler struct {
 	Gemini *logic.GeminiService
 	Tmdb   *logic.TmdbService
 	User   *logic.UserService
+	// 1日あたりのレコメンド上限（環境変数等で注入）
+	DailyRecommendLimit int
 }
 
 func (h *RecommendHandler) Recommend(c echo.Context) error {
@@ -27,8 +29,13 @@ func (h *RecommendHandler) Recommend(c echo.Context) error {
 	}
 	log.Printf("[Recommend] uid=%s", uid)
 
-	// 利用制限チェック(1日3回まで)
-	count, allowed, err := h.User.CheckAndIncrementLimit(c.Request().Context(), uid, 3)
+	limit := h.DailyRecommendLimit
+	if limit <= 0 {
+		limit = 3
+	}
+
+	// 利用制限チェック(1日N回まで)
+	count, allowed, err := h.User.CheckAndIncrementLimit(c.Request().Context(), uid, limit)
 	if err != nil {
 		log.Printf("[Recommend] error=limit_check_failed uid=%s err=%v", uid, err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to check limit"})
@@ -36,10 +43,16 @@ func (h *RecommendHandler) Recommend(c echo.Context) error {
 	if !allowed {
 		log.Printf("[Recommend] error=rate_limited uid=%s count=%d", uid, count)
 		return c.JSON(http.StatusTooManyRequests, map[string]interface{}{
-			"error": "Daily limit exceeded",
-			"limit": 3,
-			"count": count,
+			"error":     "Daily limit exceeded",
+			"code":      "daily_limit",
+			"limit":     limit,
+			"count":     count,
+			"remaining": 0,
 		})
+	}
+	remaining := limit - count
+	if remaining < 0 {
+		remaining = 0
 	}
 
 	var req model.RecommendRequest
@@ -60,8 +73,9 @@ func (h *RecommendHandler) Recommend(c echo.Context) error {
 		errStr := err.Error()
 		// Gemini API のクォータ超過は 429 で返し、フロントで専用メッセージを出せるようにする
 		if strings.Contains(errStr, "429") || strings.Contains(errStr, "quota") || strings.Contains(errStr, "Quota exceeded") {
-			return c.JSON(http.StatusTooManyRequests, map[string]string{
+			return c.JSON(http.StatusTooManyRequests, map[string]interface{}{
 				"error": "Gemini APIの利用制限に達しました。しばらく待ってから再試行するか、Google AI Studioで利用量を確認してください。",
+				"code":  "gemini_quota",
 			})
 		}
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": errStr})
@@ -81,5 +95,16 @@ func (h *RecommendHandler) Recommend(c echo.Context) error {
 	}
 
 	log.Printf("[Recommend] success uid=%s movies=%d", uid, len(geminiResp.Movies))
-	return c.JSON(http.StatusOK, geminiResp)
+	// 残り回数の見える化（フロントで「本日残りN回」を出せる）
+	return c.JSON(http.StatusOK, struct {
+		model.RecommendResponse
+		Limit     int `json:"limit"`
+		Count     int `json:"count"`
+		Remaining int `json:"remaining"`
+	}{
+		RecommendResponse: geminiResp,
+		Limit:             limit,
+		Count:             count,
+		Remaining:         remaining,
+	})
 }

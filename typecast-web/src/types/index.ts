@@ -22,6 +22,10 @@ export type Movie = {
 export type RecommendResponse = {
   sentiment_score: number;
   movies: Movie[];
+  // 日次レコメンド制限（バックエンドが返す場合のみ）
+  limit?: number;
+  count?: number;
+  remaining?: number;
 };
 
 // UIで使う履歴データ（Date型）

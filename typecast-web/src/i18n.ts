@@ -35,6 +35,9 @@ export type I18nKey =
   | 'loginRequired'
   | 'genericError'
   | 'shareFailed'
+  | 'remainingToday'
+  | 'geminiQuotaTitle'
+  | 'geminiQuotaBody'
   | 'feedbackSaved'
   | 'feedbackFailed';
 
@@ -75,6 +78,9 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     loginRequired: 'ログインしてください',
     genericError: 'エラーが発生しました',
     shareFailed: 'シェアリンクの作成に失敗しました。',
+    remainingToday: '本日は残り {{n}} 回です',
+    geminiQuotaTitle: 'AIの利用制限に達しました',
+    geminiQuotaBody: 'しばらく待ってから再試行するか、利用量を確認してください。',
     feedbackSaved: 'を記録しました！',
     feedbackFailed: '評価の送信に失敗しました',
   },
@@ -114,6 +120,9 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     loginRequired: 'Please log in',
     genericError: 'An error occurred',
     shareFailed: 'Failed to create a share link.',
+    remainingToday: '{{n}} recommendations left today',
+    geminiQuotaTitle: 'AI quota reached',
+    geminiQuotaBody: 'Please wait and try again later, or check your quota.',
     feedbackSaved: ' saved!',
     feedbackFailed: 'Failed to send feedback',
   },
@@ -121,5 +130,13 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
 
 export function t(lang: Lang, key: I18nKey): string {
   return dict[lang][key];
+}
+
+export function tf(lang: Lang, key: I18nKey, vars: Record<string, string | number>): string {
+  let s = t(lang, key);
+  for (const [k, v] of Object.entries(vars)) {
+    s = s.replaceAll(`{{${k}}}`, String(v));
+  }
+  return s;
 }
 
