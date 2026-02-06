@@ -15,6 +15,18 @@ import { shareService } from './services/share';
 // Types & Utils
 import type { Movie, HistoryItem } from './types';
 import { ApiError } from './lib/apiClient';
+
+// APIエラーからユーザー向けメッセージを取得
+function getApiErrorMessage(error: unknown, lang: Lang): string {
+  if (error instanceof ApiError) {
+    const data = error.data as { code?: string; error?: string } | null;
+    if (data?.code === 'account_deleted_cooldown') {
+      return t(lang, 'accountDeletedCooldown');
+    }
+    if (typeof data?.error === 'string') return data.error;
+  }
+  return t(lang, 'genericError');
+}
 import { t, tf, mbtiLabel, type Lang } from './i18n';
 
 // スコアから感情ラベルを取得（フィルタ用）
@@ -107,11 +119,14 @@ function App() {
         setHistoryData(items);
       } catch (error) {
         console.error("Failed to fetch history:", error);
+        if (error instanceof ApiError && (error.data as { code?: string })?.code === 'account_deleted_cooldown') {
+          alert(t(lang, 'accountDeletedCooldown'));
+        }
       }
     };
 
     fetchHistory();
-  }, [user]);
+  }, [user, lang]);
 
   // --- ハンドラー関数 ---
 
@@ -251,8 +266,8 @@ function App() {
         setShowLimitModal(true);
         return;
       }
-      
-      alert(t(lang, 'genericError'));
+
+      alert(getApiErrorMessage(error, lang));
     } finally {
       setLoading(false);
     }
@@ -278,7 +293,8 @@ function App() {
 
     } catch (error) {
       console.error("Share Error:", error);
-      alert(t(lang, 'shareFailed'));
+      const msg = getApiErrorMessage(error, lang);
+      alert(msg === t(lang, 'genericError') ? t(lang, 'shareFailed') : msg);
     }
   };
 
@@ -295,7 +311,7 @@ function App() {
       alert(`「${movieTitle}」${t(lang, 'feedbackSaved')}`);
     } catch (error) {
       console.error("Feedback Error:", error);
-      alert(t(lang, 'feedbackFailed'));
+      alert(getApiErrorMessage(error, lang));
     }
   };
 

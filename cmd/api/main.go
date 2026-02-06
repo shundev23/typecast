@@ -11,6 +11,7 @@ import (
 	"typecast/internal/logic"
 	"typecast/internal/middleware"
 
+	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go/v4"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -64,12 +65,12 @@ func main() {
 		log.Fatalf("error initializing firebase app: %v\n", err)
 	}
 
-	// Firestore Clientを初期化して、後続で使いまわす
-	client, err := firebaseApp.Firestore(ctx)
+	// Firestore Client（名前付きDB）を初期化。share/feedback も同一DBを使う
+	fsClient, err := firestore.NewClientWithDatabase(ctx, projectID, databaseID, firestoreOpts...)
 	if err != nil {
 		log.Fatalf("error initializing firestore client: %v\n", err)
 	}
-	defer client.Close()
+	defer fsClient.Close()
 
 	// Logicの初期化
 	geminiService, err := logic.NewGeminiService(ctx)
@@ -80,8 +81,8 @@ func main() {
 
 	tmdbService := logic.NewTmdbService()
 	ogpService := logic.NewOgpService()
-	shareService := logic.NewShareService(client)
-	feedbackService := logic.NewFeedbackService(client)
+	shareService := logic.NewShareService(fsClient)
+	feedbackService := logic.NewFeedbackService(fsClient)
 
 	historyService, err := logic.NewHistoryService(ctx, projectID, databaseID, firestoreOpts...)
 	if err != nil {
