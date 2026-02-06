@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 // アイコン
-import { Sparkles, Loader2, Brain, Lightbulb, LogIn, LogOut, User as UserIcon, Share2, Ban, X, ThumbsUp, ThumbsDown, Eye, Info, Moon, Sun, Languages } from 'lucide-react';
+import { Sparkles, Loader2, Brain, Lightbulb, LogIn, User as UserIcon, Share2, Ban, X, Info, Moon, Sun, Languages } from 'lucide-react';
 // Firebase Auth (認証)
-import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, type User } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
 // チャートコンポーネント
 import { MoodChart } from './components/MoodChart';
+// Pages
+import { MyPage } from './pages/MyPage';
 // Services
-import { accountService } from './services/account';
-import { feedbackService } from './services/feedback';
 import { historyService } from './services/history';
 import { recommendService } from './services/recommend';
 import { shareService } from './services/share';
@@ -76,12 +78,6 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [usage, setUsage] = useState<{ limit: number; count: number; remaining: number } | null>(null);
   const [showGeminiQuotaModal, setShowGeminiQuotaModal] = useState(false);
-  const [showMyPageModal, setShowMyPageModal] = useState(false);
-  const [historyFilter, setHistoryFilter] = useState<string>('');
-  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [deletingAccount, setDeletingAccount] = useState(false);
-  const [deleteAcknowledge, setDeleteAcknowledge] = useState(false);
   
   // チャート用データ
   const [historyData, setHistoryData] = useState<HistoryItem[]>([]);
@@ -144,14 +140,13 @@ function App() {
         setHistoryData(items);
       } catch (error) {
         console.error("Failed to fetch history:", error);
-        if (error instanceof ApiError && (error.data as { code?: string })?.code === 'account_deleted_cooldown') {
-          showApiErrorToast(error, lang);
-        }
+        // 履歴取得失敗は静かに処理（空配列のまま）
+        // エラートーストは映画推薦時のみ表示
       }
     };
 
     fetchHistory();
-  }, [user, lang]);
+  }, [user]);
 
   // --- ハンドラー関数 ---
 
@@ -164,44 +159,6 @@ function App() {
       }
     } catch (error) {
       console.error('Login failed', error);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      setMovies([]);
-      setMood('');
-      setUsage(null);
-    } catch (error) {
-      console.error("Logout failed", error);
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    if (!user) return;
-    if (deleteConfirmText.trim().toUpperCase() !== 'DELETE') return;
-
-    setDeletingAccount(true);
-    try {
-      const token = await user.getIdToken();
-      await accountService.deleteAccount(token, 'DELETE');
-      await signOut(auth);
-
-      // UI state cleanup
-      setMovies([]);
-      setMood('');
-      setHistoryData([]);
-      setUsage(null);
-
-      setShowDeleteAccountModal(false);
-      setDeleteConfirmText('');
-      toast.success(t(lang, 'accountDeleteSuccess'));
-    } catch (error) {
-      console.error('Delete account failed', error);
-      toast.error(t(lang, 'accountDeleteFailed'));
-    } finally {
-      setDeletingAccount(false);
     }
   };
 
@@ -322,23 +279,105 @@ function App() {
     }
   };
 
-  // 評価ボタンを押したときの処理
-  const handleFeedback = async (movieTitle: string, type: 'good' | 'bad' | 'watched') => {
-    if (!user) {
-      toast.error(t(lang, 'loginRequired'));
-      return;
-    }
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage 
+        user={user}
+        lang={lang}
+        setLang={setLang}
+        darkMode={darkMode}
+        setDarkMode={setDarkMode}
+        mbti={mbti}
+        setMbti={setMbti}
+        mood={mood}
+        setMood={setMood}
+        movies={movies}
+        loading={loading}
+        usage={usage}
+        showLimitModal={showLimitModal}
+        setShowLimitModal={setShowLimitModal}
+        showAboutModal={showAboutModal}
+        setShowAboutModal={setShowAboutModal}
+        showGeminiQuotaModal={showGeminiQuotaModal}
+        setShowGeminiQuotaModal={setShowGeminiQuotaModal}
+        historyData={historyData}
+        currentYear={currentYear}
+        handleLogin={handleLogin}
+        handleRecommend={handleRecommend}
+        handleShare={handleShare}
+      />} />
+      <Route path="/mypage" element={
+        user ? (
+          <MyPage 
+            user={user}
+            lang={lang}
+            setLang={setLang}
+            darkMode={darkMode}
+            setDarkMode={setDarkMode}
+          />
+        ) : (
+          <div className="min-h-screen bg-typecast-bg flex items-center justify-center">
+            <p className="text-typecast-muted">{t(lang, 'loginRequired')}</p>
+          </div>
+        )
+      } />
+    </Routes>
+  );
+}
 
-    try {
-      const token = await user.getIdToken();
-      await feedbackService.sendFeedback(movieTitle, type, token);
-      toast.success(`「${movieTitle}」${t(lang, 'feedbackSaved')}`);
-    } catch (error) {
-      console.error("Feedback Error:", error);
-      showApiErrorToast(error, lang);
-    }
-  };
+interface HomePageProps {
+  user: User | null;
+  lang: Lang;
+  setLang: (lang: Lang) => void;
+  darkMode: boolean;
+  setDarkMode: (darkMode: boolean) => void;
+  mbti: string;
+  setMbti: (mbti: string) => void;
+  mood: string;
+  setMood: (mood: string) => void;
+  movies: Movie[];
+  loading: boolean;
+  usage: { limit: number; count: number; remaining: number } | null;
+  showLimitModal: boolean;
+  setShowLimitModal: (show: boolean) => void;
+  showAboutModal: boolean;
+  setShowAboutModal: (show: boolean) => void;
+  showGeminiQuotaModal: boolean;
+  setShowGeminiQuotaModal: (show: boolean) => void;
+  historyData: HistoryItem[];
+  currentYear: number;
+  handleLogin: () => Promise<void>;
+  handleRecommend: () => Promise<void>;
+  handleShare: () => Promise<void>;
+}
 
+function HomePage({
+  user,
+  lang,
+  setLang,
+  darkMode,
+  setDarkMode,
+  mbti,
+  setMbti,
+  mood,
+  setMood,
+  movies,
+  loading,
+  usage,
+  showLimitModal,
+  setShowLimitModal,
+  showAboutModal,
+  setShowAboutModal,
+  showGeminiQuotaModal,
+  setShowGeminiQuotaModal,
+  historyData,
+  currentYear,
+  handleLogin,
+  handleRecommend,
+  handleShare,
+}: HomePageProps) {
+  const navigate = useNavigate();
+  
   return (
     <div className="min-h-screen bg-typecast-bg text-typecast-text flex flex-col">
       {/* ヘッダー: シンプル・余白を活かした Airbnb 風 */}
@@ -354,7 +393,7 @@ function App() {
           <div className="flex items-center gap-3">
             {/* 言語切替 */}
             <button
-              onClick={() => setLang((prev) => (prev === 'ja' ? 'en' : 'ja'))}
+              onClick={() => setLang(lang === 'ja' ? 'en' : 'ja')}
               className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg border border-typecast-border text-sm text-typecast-muted hover:text-typecast-text hover:bg-typecast-bg transition-colors"
               aria-label="Language"
             >
@@ -364,7 +403,7 @@ function App() {
 
             {/* ダークモード切替 */}
             <button
-              onClick={() => setDarkMode((v) => !v)}
+              onClick={() => setDarkMode(!darkMode)}
               className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg border border-typecast-border text-sm text-typecast-muted hover:text-typecast-text hover:bg-typecast-bg transition-colors"
               aria-label="Theme"
             >
@@ -373,7 +412,7 @@ function App() {
             </button>
             {user ? (
               <button
-                onClick={() => setShowMyPageModal(true)}
+                onClick={() => navigate('/mypage')}
                 className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-typecast-bg transition-colors"
               >
                 {user.photoURL ? (
@@ -404,14 +443,14 @@ function App() {
       <div className="md:hidden px-4 py-4 border-b border-typecast-border bg-typecast-surface">
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setLang((prev) => (prev === 'ja' ? 'en' : 'ja'))}
+            onClick={() => setLang(lang === 'ja' ? 'en' : 'ja')}
             className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-typecast-border text-sm text-typecast-muted hover:text-typecast-text hover:bg-typecast-bg transition-colors"
           >
             <Languages className="w-4 h-4" />
             {lang === 'ja' ? '日本語' : 'English'}
           </button>
           <button
-            onClick={() => setDarkMode((v) => !v)}
+            onClick={() => setDarkMode(!darkMode)}
             className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-typecast-border text-sm text-typecast-muted hover:text-typecast-text hover:bg-typecast-bg transition-colors"
           >
             {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -684,235 +723,6 @@ function App() {
               </div>
               <p className="text-xs text-typecast-muted text-center">{t(lang, 'poweredBy')}</p>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* アカウント削除モーダル */}
-      {showDeleteAccountModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => {
-              if (!deletingAccount) setShowDeleteAccountModal(false);
-            }}
-          />
-          <div className="relative bg-typecast-surface rounded-2xl p-8 max-w-md w-full shadow-typecast-lg border border-typecast-border">
-            <button
-              onClick={() => setShowDeleteAccountModal(false)}
-              className="absolute top-4 right-4 text-typecast-muted hover:text-typecast-text disabled:opacity-50"
-              disabled={deletingAccount}
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="space-y-5">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
-                  <Ban className="w-5 h-5 text-red-500" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-typecast-text">{t(lang, 'accountDeleteTitle')}</h2>
-                  <p className="mt-1 text-sm text-typecast-muted">{t(lang, 'accountDeleteBody')}</p>
-                  {user?.email && (
-                    <p className="mt-2 text-xs text-typecast-muted">
-                      {user.email}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="bg-typecast-bg rounded-lg p-4 border border-typecast-border space-y-3">
-                <div>
-                  <p className="text-xs font-semibold text-typecast-text">{t(lang, 'accountDeleteDeletedTitle')}</p>
-                  <ul className="mt-2 text-sm text-typecast-secondary list-disc list-inside space-y-1">
-                    <li>{t(lang, 'accountDeleteDeleted1')}</li>
-                    <li>{t(lang, 'accountDeleteDeleted2')}</li>
-                    <li>{t(lang, 'accountDeleteDeleted3')}</li>
-                    <li>{t(lang, 'accountDeleteDeleted4')}</li>
-                  </ul>
-                </div>
-                <div className="pt-3 border-t border-typecast-border">
-                  <p className="text-xs font-semibold text-typecast-text">{t(lang, 'accountDeleteNotDeletedTitle')}</p>
-                  <ul className="mt-2 text-sm text-typecast-secondary list-disc list-inside space-y-1">
-                    <li>{t(lang, 'accountDeleteNotDeleted1')}</li>
-                    <li>{t(lang, 'accountDeleteNotDeleted2')}</li>
-                  </ul>
-                </div>
-              </div>
-
-              <label className="flex items-start gap-3 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  className="mt-1 h-4 w-4 rounded border-typecast-border"
-                  checked={deleteAcknowledge}
-                  onChange={(e) => setDeleteAcknowledge(e.target.checked)}
-                  disabled={deletingAccount}
-                />
-                <span className="text-sm text-typecast-secondary">{t(lang, 'accountDeleteAcknowledge')}</span>
-              </label>
-
-              <div className="bg-typecast-surface rounded-lg p-4 border border-typecast-border">
-                <p className="text-sm text-typecast-secondary">{t(lang, 'accountDeleteHint')}</p>
-                <input
-                  value={deleteConfirmText}
-                  onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  placeholder={t(lang, 'accountDeleteType')}
-                  className="mt-3 w-full bg-typecast-bg border border-typecast-border rounded-lg px-3 py-2 text-sm text-typecast-text placeholder-typecast-muted focus:border-typecast-accent focus:ring-2 focus:ring-typecast-accent/20 outline-none"
-                  disabled={deletingAccount}
-                />
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setShowDeleteAccountModal(false);
-                    setDeleteConfirmText('');
-                    setDeleteAcknowledge(false);
-                  }}
-                  className="flex-1 border border-typecast-border rounded-lg py-3 text-sm font-medium text-typecast-muted hover:text-typecast-text hover:bg-typecast-bg transition-colors"
-                  disabled={deletingAccount}
-                >
-                  {t(lang, 'accountDeleteCancel')}
-                </button>
-                <button
-                  onClick={handleDeleteAccount}
-                  className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-typecast-border disabled:text-typecast-muted text-white rounded-lg py-3 text-sm font-medium transition-colors"
-                  disabled={deletingAccount || !deleteAcknowledge || deleteConfirmText.trim().toUpperCase() !== 'DELETE'}
-                >
-                  {deletingAccount ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : t(lang, 'accountDeleteConfirm')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* マイページモーダル */}
-      {showMyPageModal && user && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowMyPageModal(false)} />
-          <div className="relative bg-typecast-surface rounded-2xl p-6 max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-typecast-border shadow-typecast-lg">
-            <button
-              onClick={() => setShowMyPageModal(false)}
-              className="absolute top-4 right-4 text-typecast-muted hover:text-typecast-text"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <h2 className="text-xl font-semibold text-typecast-text mb-6 flex items-center gap-2">
-              <UserIcon className="w-5 h-5 text-typecast-accent" />
-              {t(lang, 'myPageTitle')}
-            </h2>
-
-            {/* 1. おすすめされた履歴 */}
-            <section className="mb-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                <h3 className="text-sm font-semibold text-typecast-text">{t(lang, 'myPageHistory')}</h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-typecast-muted">{t(lang, 'filterByMood')}:</span>
-                  <select
-                    value={historyFilter}
-                    onChange={(e) => setHistoryFilter(e.target.value)}
-                    className="bg-typecast-bg border border-typecast-border rounded-lg px-3 py-1.5 text-sm text-typecast-text"
-                  >
-                    <option value="">{t(lang, 'filterAll')}</option>
-                    {Array.from(new Set(historyData.map((h) => h.sentiment_label).filter(Boolean))).map((label) => (
-                      <option key={label} value={label}>{label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="flex-1 overflow-y-auto max-h-[45vh]">
-                {historyData.length === 0 ? (
-                  <p className="text-typecast-muted text-center py-12">{t(lang, 'myPageEmpty')}</p>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {historyData
-                      .filter((item) => !historyFilter || item.sentiment_label === historyFilter)
-                      .map((item, idx) => (
-                        <div key={`${item.title}-${item.timestamp.getTime()}-${idx}`} className="bg-typecast-bg rounded-2xl overflow-hidden border border-typecast-border shadow-typecast group">
-                          <div className="relative aspect-[2/3] overflow-hidden">
-                            <img src={item.poster || '/logo.png'} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-16">
-                              <h3 className="text-lg font-semibold text-white">{item.title}</h3>
-                              <span className="text-sm text-white/80">{item.year || ''}</span>
-                            </div>
-                          </div>
-                          <div className="p-5 space-y-4">
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2 text-typecast-accent text-xs font-medium">
-                                <Brain className="w-3.5 h-3.5" />
-                                <span>{item.label_main || ''}</span>
-                              </div>
-                              <p className="text-sm text-typecast-secondary leading-relaxed line-clamp-2">{item.reason_main || ''}</p>
-                            </div>
-                            <div className="border-t border-typecast-border pt-3 space-y-2">
-                              <div className="flex items-center gap-2 text-typecast-muted text-xs font-medium">
-                                <Lightbulb className="w-3.5 h-3.5" />
-                                <span>{item.label_sub || ''}</span>
-                              </div>
-                              <p className="text-sm text-typecast-secondary leading-relaxed line-clamp-2">{item.reason_sub || ''}</p>
-                            </div>
-                            {item.providers && item.providers.length > 0 && (
-                              <div className="border-t border-typecast-border pt-3">
-                                <p className="text-xs text-typecast-muted font-medium mb-2">{t(lang, 'availableInJP')}</p>
-                                <div className="flex flex-wrap gap-2">
-                                  {item.providers.map((provider, pIdx) => (
-                                    <a key={pIdx} href={provider.link} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
-                                      <img src={provider.logo} alt={provider.name} title={provider.name} className="w-8 h-8 rounded-lg object-contain border border-typecast-border" />
-                                    </a>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            <div className="border-t border-typecast-border pt-3 flex justify-between items-center">
-                              <span className="text-xs text-typecast-muted">
-                                {item.timestamp.toLocaleDateString(lang === 'ja' ? 'ja-JP' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {item.sentiment_label || ''}
-                              </span>
-                              <div className="flex gap-1">
-                                <button onClick={() => handleFeedback(item.title, 'good')} className="p-2 rounded-lg hover:bg-typecast-surface text-typecast-muted hover:text-typecast-accent transition-colors" title={t(lang, 'like')}>
-                                  <ThumbsUp className="w-4 h-4" />
-                                </button>
-                                <button onClick={() => handleFeedback(item.title, 'bad')} className="p-2 rounded-lg hover:bg-typecast-surface text-typecast-muted hover:text-red-500 transition-colors" title={t(lang, 'dislike')}>
-                                  <ThumbsDown className="w-4 h-4" />
-                                </button>
-                                <button onClick={() => handleFeedback(item.title, 'watched')} className="p-2 rounded-lg hover:bg-typecast-surface text-typecast-muted hover:text-green-600 transition-colors" title={t(lang, 'watched')}>
-                                  <Eye className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </div>
-            </section>
-
-            {/* 2. アカウント設定 & サインアウト */}
-            <section className="border-t border-typecast-border pt-6 space-y-2">
-              <h3 className="text-sm font-semibold text-typecast-text mb-2">{t(lang, 'myPageAccount')}</h3>
-              <button
-                onClick={() => {
-                  setShowMyPageModal(false);
-                  setShowDeleteAccountModal(true);
-                }}
-                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-typecast-bg rounded-lg transition-colors"
-              >
-                <Ban className="w-4 h-4" />
-                <span>{t(lang, 'accountDelete')}</span>
-              </button>
-              <button
-                onClick={async () => {
-                  setShowMyPageModal(false);
-                  await handleLogout();
-                }}
-                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-typecast-muted hover:text-typecast-text hover:bg-typecast-bg rounded-lg transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>{t(lang, 'logout')}</span>
-              </button>
-            </section>
           </div>
         </div>
       )}

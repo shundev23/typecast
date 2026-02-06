@@ -88,7 +88,10 @@ export type I18nKey =
   | 'feedbackSaved'
   | 'feedbackFailed'
   | 'accountDeletedCooldown'
-  | 'accountDeletedCooldownUntil';
+  | 'accountDeletedCooldownUntil'
+  | 'myPageAccessibility'
+  | 'darkModeToggle'
+  | 'languageToggle';
 
 const dict: Record<Lang, Record<I18nKey, string>> = {
   ja: {
@@ -126,7 +129,7 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     mbtiISFP: '冒険家',
     mbtiESTP: '起業家',
     mbtiESFP: 'エンターテイナー',
-    analyzeRecommend: '分析して映画を提案',
+    analyzeRecommend: '映画をおすすめしてもらう',
     shareOnX: 'X でシェア',
     analysisResult: '分析結果',
     sentimentScore: 'Sentiment Score',
@@ -181,6 +184,9 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     feedbackFailed: '評価の送信に失敗しました',
     accountDeletedCooldown: 'このアカウントは削除済みのため、一定時間APIを利用できません。',
     accountDeletedCooldownUntil: '次回利用可能: {{until}}',
+    myPageAccessibility: 'アクセシビリティ',
+    darkModeToggle: 'ダークモード切り替え',
+    languageToggle: '言語切り替え',
   },
   en: {
     login: 'Log in',
@@ -272,6 +278,9 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     feedbackFailed: 'Failed to send feedback',
     accountDeletedCooldown: 'This account was deleted. API access is temporarily unavailable.',
     accountDeletedCooldownUntil: 'Next available: {{until}}',
+    myPageAccessibility: 'Accessibility',
+    darkModeToggle: 'Dark Mode Toggle',
+    languageToggle: 'Language Toggle',
   },
 };
 
