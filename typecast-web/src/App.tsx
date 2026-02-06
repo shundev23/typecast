@@ -14,20 +14,45 @@ import { recommendService } from './services/recommend';
 import { shareService } from './services/share';
 // Types & Utils
 import type { Movie, HistoryItem } from './types';
+import toast from 'react-hot-toast';
 import { ApiError } from './lib/apiClient';
+import { t, tf, mbtiLabel, type Lang } from './i18n';
+
+// cooldownUntil をフォーマット（APIは RFC3339 形式で返す）
+function formatCooldownUntil(until: string | Date | undefined, lang: Lang): string {
+  if (!until) return '';
+  const d = typeof until === 'string' ? new Date(until) : until;
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleString(lang === 'ja' ? 'ja-JP' : 'en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZoneName: lang === 'ja' ? 'short' : undefined,
+  });
+}
 
 // APIエラーからユーザー向けメッセージを取得
 function getApiErrorMessage(error: unknown, lang: Lang): string {
   if (error instanceof ApiError) {
-    const data = error.data as { code?: string; error?: string } | null;
+    const data = error.data as { code?: string; error?: string; cooldownUntil?: string } | null;
     if (data?.code === 'account_deleted_cooldown') {
-      return t(lang, 'accountDeletedCooldown');
+      const untilStr = formatCooldownUntil(data.cooldownUntil, lang);
+      return untilStr
+        ? `${t(lang, 'accountDeletedCooldown')}\n${tf(lang, 'accountDeletedCooldownUntil', { until: untilStr })}`
+        : t(lang, 'accountDeletedCooldown');
     }
     if (typeof data?.error === 'string') return data.error;
   }
   return t(lang, 'genericError');
 }
-import { t, tf, mbtiLabel, type Lang } from './i18n';
+
+// APIエラーをトーストで表示
+function showApiErrorToast(error: unknown, lang: Lang, fallback?: string): void {
+  const msg = getApiErrorMessage(error, lang);
+  toast.error(fallback && msg === t(lang, 'genericError') ? fallback : msg);
+}
 
 // スコアから感情ラベルを取得（フィルタ用）
 function getSentimentLabel(score: number, lang: Lang): string {
@@ -120,7 +145,7 @@ function App() {
       } catch (error) {
         console.error("Failed to fetch history:", error);
         if (error instanceof ApiError && (error.data as { code?: string })?.code === 'account_deleted_cooldown') {
-          alert(t(lang, 'accountDeletedCooldown'));
+          showApiErrorToast(error, lang);
         }
       }
     };
@@ -171,10 +196,10 @@ function App() {
 
       setShowDeleteAccountModal(false);
       setDeleteConfirmText('');
-      alert(t(lang, 'accountDeleteSuccess'));
+      toast.success(t(lang, 'accountDeleteSuccess'));
     } catch (error) {
       console.error('Delete account failed', error);
-      alert(t(lang, 'accountDeleteFailed'));
+      toast.error(t(lang, 'accountDeleteFailed'));
     } finally {
       setDeletingAccount(false);
     }
@@ -184,7 +209,7 @@ function App() {
     if (!mood) return;
 
     if (!user) {
-        alert(t(lang, 'loginRequired'));
+        toast.error(t(lang, 'loginRequired'));
         return;
     }
 
@@ -267,7 +292,7 @@ function App() {
         return;
       }
 
-      alert(getApiErrorMessage(error, lang));
+      showApiErrorToast(error, lang);
     } finally {
       setLoading(false);
     }
@@ -293,25 +318,24 @@ function App() {
 
     } catch (error) {
       console.error("Share Error:", error);
-      const msg = getApiErrorMessage(error, lang);
-      alert(msg === t(lang, 'genericError') ? t(lang, 'shareFailed') : msg);
+      showApiErrorToast(error, lang, t(lang, 'shareFailed'));
     }
   };
 
   // 評価ボタンを押したときの処理
   const handleFeedback = async (movieTitle: string, type: 'good' | 'bad' | 'watched') => {
     if (!user) {
-      alert(t(lang, 'loginRequired'));
+      toast.error(t(lang, 'loginRequired'));
       return;
     }
 
     try {
       const token = await user.getIdToken();
       await feedbackService.sendFeedback(movieTitle, type, token);
-      alert(`「${movieTitle}」${t(lang, 'feedbackSaved')}`);
+      toast.success(`「${movieTitle}」${t(lang, 'feedbackSaved')}`);
     } catch (error) {
       console.error("Feedback Error:", error);
-      alert(getApiErrorMessage(error, lang));
+      showApiErrorToast(error, lang);
     }
   };
 

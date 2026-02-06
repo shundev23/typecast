@@ -87,7 +87,8 @@ export type I18nKey =
   | 'accountDeleteAcknowledge'
   | 'feedbackSaved'
   | 'feedbackFailed'
-  | 'accountDeletedCooldown';
+  | 'accountDeletedCooldown'
+  | 'accountDeletedCooldownUntil';
 
 const dict: Record<Lang, Record<I18nKey, string>> = {
   ja: {
@@ -179,6 +180,7 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     feedbackSaved: 'を記録しました！',
     feedbackFailed: '評価の送信に失敗しました',
     accountDeletedCooldown: 'このアカウントは削除済みのため、一定時間APIを利用できません。',
+    accountDeletedCooldownUntil: '次回利用可能: {{until}}',
   },
   en: {
     login: 'Log in',
@@ -269,6 +271,7 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     feedbackSaved: ' saved!',
     feedbackFailed: 'Failed to send feedback',
     accountDeletedCooldown: 'This account was deleted. API access is temporarily unavailable.',
+    accountDeletedCooldownUntil: 'Next available: {{until}}',
   },
 };
 
