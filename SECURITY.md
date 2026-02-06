@@ -1,34 +1,34 @@
-# セキュリティガイド
+# Security Guide
 
-🌐 **[English version here](./SECURITY.en.md)**
+🌐 **[日本語版はこちら (Japanese)](./SECURITY.ja.md)**
 
-このドキュメントでは、TYPECASTプロジェクトのセキュリティ設定について説明します。
+This document explains the security configuration for the TYPECAST project.
 
-## 概要
+## Overview
 
-TYPECASTは以下のセキュリティ対策を実装しています：
+TYPECAST implements the following security measures:
 
-1. **環境変数による機密情報の管理**
-2. **Firestore Security Rulesによるデータアクセス制御**
-3. **Firebase API Keyの制限設定（推奨）**
-4. **GitHub Secretsによる本番環境の保護**
+1. **Environment variable management for sensitive information**
+2. **Data access control via Firestore Security Rules**
+3. **Firebase API Key restrictions (recommended)**
+4. **Production environment protection via GitHub Secrets**
 
 ---
 
-## 1. 環境変数の管理
+## 1. Environment Variable Management
 
-### 機密情報の保護
+### Protecting Sensitive Information
 
-以下のファイルは`.gitignore`で除外され、Gitリポジトリには含まれません：
+The following files are excluded via `.gitignore` and are not included in the Git repository:
 
-- `.env` - ローカル開発用の環境変数
-- `.env.local` - ローカル環境固有の設定
-- `service-account.json` - GCPサービスアカウント鍵
-- `.cursorrules` - Cursor IDE設定
+- `.env` - Local development environment variables
+- `.env.local` - Local environment-specific settings
+- `service-account.json` - GCP service account key
+- `.cursorrules` - Cursor IDE configuration
 
-### 必須環境変数
+### Required Environment Variables
 
-#### バックエンド（ルートディレクトリの`.env`）
+#### Backend (`.env` in project root)
 
 ```bash
 PORT=8080
@@ -41,7 +41,7 @@ DAILY_RECOMMEND_LIMIT=5
 ACCOUNT_RECREATE_COOLDOWN_HOURS=24
 ```
 
-#### フロントエンド（`typecast-web/.env`）
+#### Frontend (`typecast-web/.env`)
 
 ```bash
 VITE_API_URL=http://localhost:8080
@@ -53,68 +53,68 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
 ```
 
-**重要**: `firebase.ts`はハードコードされたフォールバック値を持たないため、全ての環境変数が必須です。未設定の場合は起動時にエラーが発生します。
+**Important**: `firebase.ts` does not have hardcoded fallback values, so all environment variables are required. If not set, the application will fail at startup.
 
 ---
 
 ## 2. Firestore Security Rules
 
-### ルールの概要
+### Rules Overview
 
-`firestore.rules`ファイルで以下のアクセス制御を実装しています：
+The `firestore.rules` file implements the following access controls:
 
-#### users コレクション
-- 読み取り・書き込み：自分のドキュメントのみ
+#### users collection
+- Read/Write: Own document only
 
-#### history コレクション
-- 読み取り・書き込み：自分の履歴のみ
-- `user_id`フィールドで所有者を判定
+#### history collection
+- Read/Write: Own history only
+- Owner determined by `user_id` field
 
-#### share コレクション
-- 読み取り：誰でも可能（シェアリンク用）
-- 作成・更新・削除：自分が作成したもののみ
+#### share collection
+- Read: Anyone (for share links)
+- Create/Update/Delete: Own created items only
 
-#### feedback コレクション
-- 読み取り・書き込み：自分のフィードバックのみ
+#### feedback collection
+- Read/Write: Own feedback only
 
-#### deleted_identities コレクション
-- 読み取り・書き込み：不可（サーバーサイドのみ）
+#### deleted_identities collection
+- Read/Write: Not allowed (server-side only)
 
-### ルールのデプロイ
+### Deploying Rules
 
 ```bash
-# Firestore Rulesのみデプロイ
+# Deploy Firestore Rules only
 firebase deploy --only firestore:rules
 
-# 全体をデプロイ（Hosting + Firestore Rules）
+# Deploy everything (Hosting + Firestore Rules)
 firebase deploy
 ```
 
-### ルールのテスト
+### Testing Rules
 
-Firebase Consoleの「Firestore Database > ルール」タブで、ルールシミュレーターを使用してテストできます。
+You can test rules using the Rules Simulator in the Firebase Console under "Firestore Database > Rules" tab.
 
 ---
 
-## 3. Firebase API Key制限（推奨）
+## 3. Firebase API Key Restrictions (Recommended)
 
-Firebase Web API Keyは公開されることが前提ですが、不正利用を防ぐため制限を設定することを強く推奨します。
+Firebase Web API Keys are designed to be public, but it is strongly recommended to configure restrictions to prevent unauthorized use.
 
-### 設定手順
+### Configuration Steps
 
-1. **GCP Consoleにアクセス**
+1. **Access GCP Console**
    - https://console.cloud.google.com/
-   - プロジェクトを選択
+   - Select your project
 
-2. **認証情報ページを開く**
-   - 左メニュー > APIs & Services > Credentials
+2. **Open Credentials page**
+   - Left menu > APIs & Services > Credentials
 
-3. **Firebase Web API Keyを選択**
-   - API キーの一覧から`VITE_FIREBASE_API_KEY`に対応するキーを選択
+3. **Select Firebase Web API Key**
+   - Select the key corresponding to `VITE_FIREBASE_API_KEY` from the API keys list
 
-4. **アプリケーションの制限を設定**
-   - 「HTTPリファラー（ウェブサイト）」を選択
-   - 以下のリファラーを追加：
+4. **Set Application restrictions**
+   - Select "HTTP referrers (web sites)"
+   - Add the following referrers:
      ```
      https://tycast.net/*
      https://*.tycast.net/*
@@ -122,115 +122,115 @@ Firebase Web API Keyは公開されることが前提ですが、不正利用を
      http://localhost:*/*
      ```
 
-5. **API制限を設定**
-   - 「キーを制限」を選択
-   - 以下のAPIを有効化：
+5. **Set API restrictions**
+   - Select "Restrict key"
+   - Enable the following APIs:
      - Identity Toolkit API
      - Token Service API
      - Cloud Firestore API
      - Firebase Installations API
 
-6. **保存**
+6. **Save**
 
-### 制限の効果
+### Effects of Restrictions
 
-- 指定したドメイン以外からのAPIキー使用を防止
-- 不正なFirebase操作をブロック
-- クォータの不正消費を防止
+- Prevents API key usage from domains other than specified
+- Blocks unauthorized Firebase operations
+- Prevents unauthorized quota consumption
 
 ---
 
-## 4. GitHub Secretsの設定
+## 4. GitHub Secrets Configuration
 
-本番環境へのデプロイには、以下のGitHub Secretsが必要です：
+The following GitHub Secrets are required for production deployment:
 
-### 共通
+### Common
 
-- `GCP_PROJECT_ID` - GCPプロジェクトID
-- `GCP_SA_KEY` - サービスアカウントのJSON鍵（全体）
+- `GCP_PROJECT_ID` - GCP project ID
+- `GCP_SA_KEY` - Service account JSON key (complete)
 
-### バックエンド（Cloud Run）
+### Backend (Cloud Run)
 
-- `GEMINI_API_KEY` - Gemini APIキー
-- `TMDB_API_KEY` - TMDB APIキー
-- `GEMINI_PROMPT_TEMPLATE_B64` - Base64エンコードされたプロンプト
-- `VITE_FIREBASE_PROJECT_ID` - FirebaseプロジェクトID
-- `FIRESTORE_DB_NAME` - Firestoreデータベース名
-- `PROD_FRONTEND_URL` - フロントエンドURL（例: https://tycast.net）
-- `PROD_API_BASE_URL` - バックエンドURL（例: https://typecast-api-xxx.run.app）
-- `DAILY_RECOMMEND_LIMIT` - 1日のレコメンド上限
+- `GEMINI_API_KEY` - Gemini API key
+- `TMDB_API_KEY` - TMDB API key
+- `GEMINI_PROMPT_TEMPLATE_B64` - Base64-encoded prompt
+- `VITE_FIREBASE_PROJECT_ID` - Firebase project ID
+- `FIRESTORE_DB_NAME` - Firestore database name
+- `PROD_FRONTEND_URL` - Frontend URL (e.g., https://tycast.net)
+- `PROD_API_BASE_URL` - Backend URL (e.g., https://typecast-api-xxx.run.app)
+- `DAILY_RECOMMEND_LIMIT` - Daily recommendation limit
 
-### フロントエンド（Firebase Hosting）
+### Frontend (Firebase Hosting)
 
-- `VITE_API_URL` - バックエンドAPIのURL
-- `VITE_FIREBASE_API_KEY` - Firebase Web APIキー
-- `VITE_FIREBASE_AUTH_DOMAIN` - Firebase認証ドメイン
-- `VITE_FIREBASE_PROJECT_ID` - FirebaseプロジェクトID
-- `VITE_FIREBASE_STORAGE_BUCKET` - Firebaseストレージバケット
-- `VITE_FIREBASE_MESSAGING_SENDER_ID` - Firebase Messaging送信者ID
+- `VITE_API_URL` - Backend API URL
+- `VITE_FIREBASE_API_KEY` - Firebase Web API key
+- `VITE_FIREBASE_AUTH_DOMAIN` - Firebase authentication domain
+- `VITE_FIREBASE_PROJECT_ID` - Firebase project ID
+- `VITE_FIREBASE_STORAGE_BUCKET` - Firebase storage bucket
+- `VITE_FIREBASE_MESSAGING_SENDER_ID` - Firebase Messaging sender ID
 - `VITE_FIREBASE_APP_ID` - Firebase App ID
 
 ---
 
-## 5. セキュリティチェックリスト
+## 5. Security Checklist
 
-本番環境にデプロイする前に、以下を確認してください：
+Before deploying to production, verify the following:
 
-### 必須
+### Required
 
-- [ ] `.env`ファイルがGitリポジトリに含まれていない
-- [ ] `service-account.json`がGitリポジトリに含まれていない
-- [ ] Firestore Security Rulesがデプロイされている
-- [ ] GitHub Secretsが全て設定されている
-- [ ] Firebase Authenticationで承認済みドメインが設定されている
+- [ ] `.env` file is not included in Git repository
+- [ ] `service-account.json` is not included in Git repository
+- [ ] Firestore Security Rules are deployed
+- [ ] All GitHub Secrets are configured
+- [ ] Authorized domains are configured in Firebase Authentication
 
-### 推奨
+### Recommended
 
-- [ ] Firebase API Keyに制限が設定されている
-- [ ] Cloud Runサービスに適切なIAM権限が設定されている
-- [ ] Firestoreのバックアップが有効化されている
-- [ ] Cloud Loggingでエラー監視が設定されている
+- [ ] Firebase API Key restrictions are configured
+- [ ] Appropriate IAM permissions are set for Cloud Run service
+- [ ] Firestore backups are enabled
+- [ ] Error monitoring is configured in Cloud Logging
 
 ---
 
-## 6. インシデント対応
+## 6. Incident Response
 
-### APIキーが漏洩した場合
+### If API Key is Leaked
 
-1. **即座にキーを無効化**
+1. **Immediately disable the key**
    - GCP Console > APIs & Services > Credentials
-   - 該当するキーを削除または再生成
+   - Delete or regenerate the affected key
 
-2. **新しいキーを生成**
-   - 新しいAPIキーを作成
-   - 制限を設定
+2. **Generate a new key**
+   - Create a new API key
+   - Configure restrictions
 
-3. **環境変数を更新**
-   - ローカル: `.env`ファイルを更新
-   - 本番: GitHub Secretsを更新
-   - Cloud Runを再デプロイ
+3. **Update environment variables**
+   - Local: Update `.env` file
+   - Production: Update GitHub Secrets
+   - Redeploy Cloud Run
 
-4. **影響範囲を調査**
-   - Cloud Loggingで不正なアクセスを確認
-   - 必要に応じてユーザーに通知
+4. **Investigate impact**
+   - Check Cloud Logging for unauthorized access
+   - Notify users if necessary
 
-### 不正アクセスを検知した場合
+### If Unauthorized Access is Detected
 
-1. **Firestore Security Rulesを確認**
-   - ルールが正しく設定されているか確認
-   - 必要に応じて厳格化
+1. **Verify Firestore Security Rules**
+   - Confirm rules are correctly configured
+   - Strengthen if necessary
 
-2. **Cloud Loggingで調査**
-   - 不正なアクセスパターンを特定
-   - IPアドレスやユーザーIDを記録
+2. **Investigate with Cloud Logging**
+   - Identify unauthorized access patterns
+   - Record IP addresses and user IDs
 
-3. **対策を実施**
-   - 該当ユーザーのアカウントを停止
-   - 必要に応じてAPIキー制限を強化
+3. **Implement countermeasures**
+   - Suspend affected user accounts
+   - Strengthen API key restrictions if necessary
 
 ---
 
-## 7. 参考リンク
+## 7. Reference Links
 
 - [Firebase Security Rules Documentation](https://firebase.google.com/docs/firestore/security/get-started)
 - [GCP API Key Best Practices](https://cloud.google.com/docs/authentication/api-keys)
@@ -238,6 +238,6 @@ Firebase Web API Keyは公開されることが前提ですが、不正利用を
 
 ---
 
-## 質問・問題報告
+## Questions & Issue Reporting
 
-セキュリティに関する質問や問題を発見した場合は、公開のIssueではなく、プロジェクトメンテナーに直接連絡してください。
+If you have security-related questions or discover issues, please contact the project maintainers directly rather than opening a public Issue.
