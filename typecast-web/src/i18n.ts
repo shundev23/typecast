@@ -8,6 +8,10 @@ export type I18nKey =
   | 'myPage'
   | 'myPageTitle'
   | 'myPageEmpty'
+  | 'myPageHistory'
+  | 'myPageAccount'
+  | 'filterByMood'
+  | 'filterAll'
   | 'mbtiType'
   | 'mood'
   | 'moodPlaceholder'
@@ -91,8 +95,12 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     logout: 'ログアウト',
     account: 'アカウント',
     myPage: 'マイページ',
-    myPageTitle: 'レコメンド履歴',
+    myPageTitle: 'マイページ',
     myPageEmpty: 'まだレコメンド履歴がありません',
+    myPageHistory: 'おすすめされた履歴',
+    myPageAccount: 'アカウント設定',
+    filterByMood: '気分でフィルタ',
+    filterAll: 'すべて',
     mbtiType: 'MBTI タイプ',
     mood: '今の気分',
     moodPlaceholder: '例: 仕事で理不尽なことがあってムシャクシャしてるから、とにかく派手にぶっ壊す映画が見たい。',
@@ -176,8 +184,12 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     logout: 'Log out',
     account: 'Account',
     myPage: 'My Page',
-    myPageTitle: 'Recommendation History',
+    myPageTitle: 'My Page',
     myPageEmpty: 'No recommendations yet',
+    myPageHistory: 'Recommendation History',
+    myPageAccount: 'Account Settings',
+    filterByMood: 'Filter by mood',
+    filterAll: 'All',
     mbtiType: 'MBTI Type',
     mood: 'Mood',
     moodPlaceholder: "e.g. I'm frustrated at work and want to watch something that blows things up.",

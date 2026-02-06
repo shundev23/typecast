@@ -26,7 +26,11 @@ func main() {
 	e := echo.New()
 	e.Use(echoMiddleware.Logger())
 	e.Use(echoMiddleware.Recover())
-	e.Use(echoMiddleware.CORS())
+	e.Use(echoMiddleware.CORSWithConfig(echoMiddleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions},
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAuthorization},
+	}))
 
 	// --- DI（依存性の注入）開始
 	ctx := context.Background()

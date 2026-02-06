@@ -201,7 +201,9 @@ High-level steps to run backend and frontend locally.
 
 ### Production deploy (brief)
 
-- **Backend (Cloud Run):** GitHub Actions builds the Docker image and deploys to Cloud Run. Secrets (e.g. `GEMINI_API_KEY`, `TMDB_API_KEY`, `FRONTEND_URL`, `API_BASE_URL`) are passed as environment variables at deploy time. Ensure `FRONTEND_URL` and `API_BASE_URL` are set correctly so share links and OGP image URLs point to production.
+- **Backend (Cloud Run):** GitHub Actions builds the Docker image and deploys to Cloud Run. Secrets (e.g. `GEMINI_API_KEY`, `TMDB_API_KEY`, `FRONTEND_URL`, `API_BASE_URL`, `DAILY_RECOMMEND_LIMIT`) are passed as environment variables at deploy time.
+  - `DAILY_RECOMMEND_LIMIT`: 1日のレコメンド上限（例: 5）。GitHub Secrets に追加すること。未設定時はバックエンドのデフォルト 3 が使われる。
+  - `FRONTEND_URL`, `API_BASE_URL`: シェアリンク・OGP 用。正しく設定しないとシェアが失敗する。
 - **Frontend (Firebase Hosting):** CI builds with `VITE_API_URL` from secrets and deploys the output to Firebase Hosting. The production app then talks to the Cloud Run API.
 
 ---

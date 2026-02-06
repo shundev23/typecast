@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 // アイコン
-import { Sparkles, Loader2, Brain, Lightbulb, LogIn, LogOut, User as UserIcon, Share2, Ban, X, ThumbsUp, ThumbsDown, Eye, Info, Moon, Sun, Languages, Film } from 'lucide-react';
+import { Sparkles, Loader2, Brain, Lightbulb, LogIn, LogOut, User as UserIcon, Share2, Ban, X, ThumbsUp, ThumbsDown, Eye, Info, Moon, Sun, Languages } from 'lucide-react';
 // Firebase Auth (認証)
 import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
@@ -17,6 +17,15 @@ import type { Movie, HistoryItem } from './types';
 import { ApiError } from './lib/apiClient';
 import { t, tf, mbtiLabel, type Lang } from './i18n';
 
+// スコアから感情ラベルを取得（フィルタ用）
+function getSentimentLabel(score: number, lang: Lang): string {
+  if (score >= 3) return lang === 'ja' ? '非常にポジティブ・高揚状態' : 'Very Positive';
+  if (score >= 1) return lang === 'ja' ? 'ポジティブ・安定的' : 'Positive';
+  if (score === 0) return lang === 'ja' ? 'ニュートラル・平常心' : 'Neutral';
+  if (score >= -2) return lang === 'ja' ? 'ネガティブ・疲労気味' : 'Negative';
+  return lang === 'ja' ? '非常にネガティブ・要休息' : 'Very Negative';
+}
+
 function App() {
   // --- State管理 ---
   const [mbti, setMbti] = useState('INTP');
@@ -30,8 +39,8 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [usage, setUsage] = useState<{ limit: number; count: number; remaining: number } | null>(null);
   const [showGeminiQuotaModal, setShowGeminiQuotaModal] = useState(false);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showMyPageModal, setShowMyPageModal] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<string>('');
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -183,25 +192,41 @@ function App() {
 
       // API経由で履歴を保存
       if (data.movies.length > 0) {
+        const sentimentLabel = getSentimentLabel(data.sentiment_score, lang);
         await historyService.save({
           movies: data.movies.map(m => ({
-             title: m.title,
-             poster: m.poster
+            title: m.title,
+            year: m.year,
+            poster: m.poster,
+            reason_main: m.reason_main,
+            reason_sub: m.reason_sub,
+            label_main: m.label_main,
+            label_sub: m.label_sub,
+            providers: m.providers
           })),
           mood: mood,
-          score: data.sentiment_score
+          score: data.sentiment_score,
+          sentiment_label: sentimentLabel
         }, token);
 
         // チャート即時更新用（再フェッチせずにstateに追加）
+        const now = new Date();
         setHistoryData(prev => [
-            ...prev,
-            ...data.movies.map(m => ({
-                title: m.title,
-                poster: m.poster,
-                timestamp: new Date(),
-                score: data.sentiment_score,
-                mood: mood
-            }))
+          ...prev,
+          ...data.movies.map(m => ({
+            title: m.title,
+            year: m.year,
+            poster: m.poster,
+            reason_main: m.reason_main,
+            reason_sub: m.reason_sub,
+            label_main: m.label_main,
+            label_sub: m.label_sub,
+            providers: m.providers,
+            timestamp: now,
+            score: data.sentiment_score,
+            mood: mood,
+            sentiment_label: sentimentLabel
+          }))
         ]);
       }
 
@@ -307,64 +332,21 @@ function App() {
               <span className="font-medium">{darkMode ? 'Light' : 'Dark'}</span>
             </button>
             {user ? (
-              <div className="relative">
-                <button
-                  onClick={() => setShowProfileMenu((v) => !v)}
-                  className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-typecast-bg transition-colors"
-                >
-                  {user.photoURL ? (
-                    <img src={user.photoURL} alt="User" className="w-9 h-9 rounded-full border border-typecast-border" />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-typecast-border flex items-center justify-center">
-                      <UserIcon className="w-5 h-5 text-typecast-muted" />
-                    </div>
-                  )}
-                  <span className="text-sm font-medium text-typecast-text hidden md:block max-w-[140px] truncate">
-                    {user.displayName || user.email}
-                  </span>
-                </button>
-                {showProfileMenu && (
-                  <div className="absolute right-0 mt-2 w-64 bg-typecast-surface border border-typecast-border rounded-xl shadow-typecast z-40">
-                    <div className="px-4 py-3 border-b border-typecast-border">
-                      <p className="text-xs font-semibold text-typecast-muted">{t(lang, 'account')}</p>
-                      <p className="mt-1 text-sm text-typecast-text truncate">{user.displayName || user.email}</p>
-                      {user.email && (
-                        <p className="text-xs text-typecast-muted truncate">{user.email}</p>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        setShowMyPageModal(true);
-                      }}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-typecast-muted hover:text-typecast-text hover:bg-typecast-bg transition-colors"
-                    >
-                      <UserIcon className="w-4 h-4" />
-                      <span>{t(lang, 'myPage')}</span>
-                    </button>
-                    <button
-                      onClick={async () => {
-                        setShowProfileMenu(false);
-                        await handleLogout();
-                      }}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-typecast-muted hover:text-typecast-text hover:bg-typecast-bg transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>{t(lang, 'logout')}</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        setShowDeleteAccountModal(true);
-                      }}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-typecast-bg transition-colors border-t border-typecast-border"
-                    >
-                      <Ban className="w-4 h-4" />
-                      <span>{t(lang, 'accountDelete')}</span>
-                    </button>
+              <button
+                onClick={() => setShowMyPageModal(true)}
+                className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-typecast-bg transition-colors"
+              >
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt="User" className="w-9 h-9 rounded-full border border-typecast-border" />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-typecast-border flex items-center justify-center">
+                    <UserIcon className="w-5 h-5 text-typecast-muted" />
                   </div>
                 )}
-              </div>
+                <span className="text-sm font-medium text-typecast-text hidden md:block max-w-[140px] truncate">
+                  {user.displayName || user.email}
+                </span>
+              </button>
             ) : (
               <button
                 onClick={handleLogin}
@@ -513,11 +495,7 @@ function App() {
               <div>
                 <p className="text-xs text-typecast-muted font-medium mb-1">{t(lang, 'analysisResult')}</p>
                 <p className="text-sm font-medium text-typecast-text">
-                  {(historyData[historyData.length - 1]?.score ?? 0) >= 3 ? '非常にポジティブ・高揚状態' :
-                   (historyData[historyData.length - 1]?.score ?? 0) >= 1 ? 'ポジティブ・安定的' :
-                   (historyData[historyData.length - 1]?.score ?? 0) === 0 ? 'ニュートラル・平常心' :
-                   (historyData[historyData.length - 1]?.score ?? 0) >= -2 ? 'ネガティブ・疲労気味' :
-                   '非常にネガティブ・要休息'}
+                  {getSentimentLabel(historyData[historyData.length - 1]?.score ?? 0, lang)}
                 </p>
               </div>
             </div>
@@ -569,20 +547,6 @@ function App() {
                     </div>
                   </div>
                 )}
-                <div className="border-t border-typecast-border pt-3 flex justify-between items-center">
-                  <span className="text-xs text-typecast-muted">{t(lang, 'feedback')}</span>
-                  <div className="flex gap-1">
-                    <button onClick={() => handleFeedback(movie.title, 'good')} className="p-2 rounded-lg hover:bg-typecast-bg text-typecast-muted hover:text-typecast-accent transition-colors" title={t(lang, 'like')}>
-                      <ThumbsUp className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleFeedback(movie.title, 'bad')} className="p-2 rounded-lg hover:bg-typecast-bg text-typecast-muted hover:text-red-500 transition-colors" title={t(lang, 'dislike')}>
-                      <ThumbsDown className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleFeedback(movie.title, 'watched')} className="p-2 rounded-lg hover:bg-typecast-bg text-typecast-muted hover:text-green-600 transition-colors" title={t(lang, 'watched')}>
-                      <Eye className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
           ))}
@@ -785,47 +749,130 @@ function App() {
       )}
 
       {/* マイページモーダル */}
-      {showMyPageModal && (
+      {showMyPageModal && user && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowMyPageModal(false)} />
-          <div className="relative bg-typecast-surface rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-typecast-border shadow-typecast-lg">
+          <div className="relative bg-typecast-surface rounded-2xl p-6 max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-typecast-border shadow-typecast-lg">
             <button
               onClick={() => setShowMyPageModal(false)}
               className="absolute top-4 right-4 text-typecast-muted hover:text-typecast-text"
             >
               <X className="w-5 h-5" />
             </button>
-            <h2 className="text-xl font-semibold text-typecast-text mb-4 flex items-center gap-2">
-              <Film className="w-5 h-5 text-typecast-accent" />
+            <h2 className="text-xl font-semibold text-typecast-text mb-6 flex items-center gap-2">
+              <UserIcon className="w-5 h-5 text-typecast-accent" />
               {t(lang, 'myPageTitle')}
             </h2>
-            <div className="flex-1 overflow-y-auto">
-              {historyData.length === 0 ? (
-                <p className="text-typecast-muted text-center py-12">{t(lang, 'myPageEmpty')}</p>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {historyData.map((item, idx) => (
-                    <div key={`${item.title}-${item.timestamp.getTime()}-${idx}`} className="bg-typecast-bg rounded-xl overflow-hidden border border-typecast-border">
-                      <div className="aspect-[2/3] overflow-hidden">
-                        <img src={item.poster || '/logo.png'} alt={item.title} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="p-3">
-                        <h3 className="text-sm font-medium text-typecast-text line-clamp-2">{item.title}</h3>
-                        <p className="text-xs text-typecast-muted mt-1 line-clamp-2">{item.mood}</p>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className={`text-xs font-medium ${item.score > 0 ? 'text-typecast-accent' : item.score < 0 ? 'text-red-500' : 'text-typecast-secondary'}`}>
-                            {item.score > 0 ? '+' : ''}{item.score}
-                          </span>
-                          <span className="text-xs text-typecast-muted">
-                            {item.timestamp.toLocaleDateString(lang === 'ja' ? 'ja-JP' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+
+            {/* 1. おすすめされた履歴 */}
+            <section className="mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <h3 className="text-sm font-semibold text-typecast-text">{t(lang, 'myPageHistory')}</h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-typecast-muted">{t(lang, 'filterByMood')}:</span>
+                  <select
+                    value={historyFilter}
+                    onChange={(e) => setHistoryFilter(e.target.value)}
+                    className="bg-typecast-bg border border-typecast-border rounded-lg px-3 py-1.5 text-sm text-typecast-text"
+                  >
+                    <option value="">{t(lang, 'filterAll')}</option>
+                    {Array.from(new Set(historyData.map((h) => h.sentiment_label).filter(Boolean))).map((label) => (
+                      <option key={label} value={label}>{label}</option>
+                    ))}
+                  </select>
                 </div>
-              )}
-            </div>
+              </div>
+              <div className="flex-1 overflow-y-auto max-h-[45vh]">
+                {historyData.length === 0 ? (
+                  <p className="text-typecast-muted text-center py-12">{t(lang, 'myPageEmpty')}</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {historyData
+                      .filter((item) => !historyFilter || item.sentiment_label === historyFilter)
+                      .map((item, idx) => (
+                        <div key={`${item.title}-${item.timestamp.getTime()}-${idx}`} className="bg-typecast-bg rounded-2xl overflow-hidden border border-typecast-border shadow-typecast group">
+                          <div className="relative aspect-[2/3] overflow-hidden">
+                            <img src={item.poster || '/logo.png'} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-16">
+                              <h3 className="text-lg font-semibold text-white">{item.title}</h3>
+                              <span className="text-sm text-white/80">{item.year || ''}</span>
+                            </div>
+                          </div>
+                          <div className="p-5 space-y-4">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-typecast-accent text-xs font-medium">
+                                <Brain className="w-3.5 h-3.5" />
+                                <span>{item.label_main || ''}</span>
+                              </div>
+                              <p className="text-sm text-typecast-secondary leading-relaxed line-clamp-2">{item.reason_main || ''}</p>
+                            </div>
+                            <div className="border-t border-typecast-border pt-3 space-y-2">
+                              <div className="flex items-center gap-2 text-typecast-muted text-xs font-medium">
+                                <Lightbulb className="w-3.5 h-3.5" />
+                                <span>{item.label_sub || ''}</span>
+                              </div>
+                              <p className="text-sm text-typecast-secondary leading-relaxed line-clamp-2">{item.reason_sub || ''}</p>
+                            </div>
+                            {item.providers && item.providers.length > 0 && (
+                              <div className="border-t border-typecast-border pt-3">
+                                <p className="text-xs text-typecast-muted font-medium mb-2">{t(lang, 'availableInJP')}</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {item.providers.map((provider, pIdx) => (
+                                    <a key={pIdx} href={provider.link} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+                                      <img src={provider.logo} alt={provider.name} title={provider.name} className="w-8 h-8 rounded-lg object-contain border border-typecast-border" />
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            <div className="border-t border-typecast-border pt-3 flex justify-between items-center">
+                              <span className="text-xs text-typecast-muted">
+                                {item.timestamp.toLocaleDateString(lang === 'ja' ? 'ja-JP' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {item.sentiment_label || ''}
+                              </span>
+                              <div className="flex gap-1">
+                                <button onClick={() => handleFeedback(item.title, 'good')} className="p-2 rounded-lg hover:bg-typecast-surface text-typecast-muted hover:text-typecast-accent transition-colors" title={t(lang, 'like')}>
+                                  <ThumbsUp className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => handleFeedback(item.title, 'bad')} className="p-2 rounded-lg hover:bg-typecast-surface text-typecast-muted hover:text-red-500 transition-colors" title={t(lang, 'dislike')}>
+                                  <ThumbsDown className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => handleFeedback(item.title, 'watched')} className="p-2 rounded-lg hover:bg-typecast-surface text-typecast-muted hover:text-green-600 transition-colors" title={t(lang, 'watched')}>
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* 2. アカウント設定 & サインアウト */}
+            <section className="border-t border-typecast-border pt-6 space-y-2">
+              <h3 className="text-sm font-semibold text-typecast-text mb-2">{t(lang, 'myPageAccount')}</h3>
+              <button
+                onClick={() => {
+                  setShowMyPageModal(false);
+                  setShowDeleteAccountModal(true);
+                }}
+                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-typecast-bg rounded-lg transition-colors"
+              >
+                <Ban className="w-4 h-4" />
+                <span>{t(lang, 'accountDelete')}</span>
+              </button>
+              <button
+                onClick={async () => {
+                  setShowMyPageModal(false);
+                  await handleLogout();
+                }}
+                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-typecast-muted hover:text-typecast-text hover:bg-typecast-bg rounded-lg transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>{t(lang, 'logout')}</span>
+              </button>
+            </section>
           </div>
         </div>
       )}

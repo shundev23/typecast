@@ -28,30 +28,51 @@ export type RecommendResponse = {
   remaining?: number;
 };
 
-// UIで使う履歴データ（Date型）
+// UIで使う履歴データ（Date型、レコメンド表示と同様の情報）
 export type HistoryItem = {
   title: string;
+  year: string;
   poster: string;
+  reason_main: string;
+  reason_sub: string;
+  label_main: string;
+  label_sub: string;
+  providers?: Provider[];
   timestamp: Date;
   score: number;
   mood: string;
+  sentiment_label: string;
 };
 
 // APIから返ってくる履歴データ（日付が文字列）
 export type ApiHistoryItem = {
   title: string;
+  year?: string;
   poster?: string;
+  reason_main?: string;
+  reason_sub?: string;
+  label_main?: string;
+  label_sub?: string;
+  providers?: Provider[];
   timestamp: string;
   score: number;
   mood: string;
+  sentiment_label?: string;
 };
 
 // 履歴保存時のリクエストボディ
 export type SaveHistoryRequest = {
-  movies: {
+  movies: Array<{
     title: string;
+    year: string;
     poster: string;
-  }[];
+    reason_main: string;
+    reason_sub: string;
+    label_main: string;
+    label_sub: string;
+    providers?: Provider[];
+  }>;
   mood: string;
   score: number;
+  sentiment_label: string;
 };

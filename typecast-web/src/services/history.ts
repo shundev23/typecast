@@ -16,7 +16,14 @@ export const historyService = {
     // 変換処理 (DTO -> Domain Model)
     return data.map((item) => ({
       ...item,
+      year: item.year ?? '',
       poster: item.poster ?? '',
+      reason_main: item.reason_main ?? '',
+      reason_sub: item.reason_sub ?? '',
+      label_main: item.label_main ?? '',
+      label_sub: item.label_sub ?? '',
+      providers: item.providers ?? [],
+      sentiment_label: item.sentiment_label ?? '',
       timestamp: new Date(item.timestamp),
     }));
   },

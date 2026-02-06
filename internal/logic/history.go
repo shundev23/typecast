@@ -66,16 +66,11 @@ func (s *HistoryService) SaveHistory(ctx context.Context, uid string, req model.
 	historyCol := s.Client.Collection("users").Doc(uid).Collection("history")
 
 	for _, movie := range req.Movies {
-		// タイトルのスラッシュを置換（ドキュメントIDに使えないため）
-		
-		docRef := historyCol.Doc(movie.Title) // タイトルをIDにする
-		
-		// 保存データを作成
-		// Timestampはサーバー側で現在時刻を入れるのが確実
+		docRef := historyCol.Doc(movie.Title)
 		movie.Timestamp = time.Now()
-		// リクエスト全体のMood/Scoreを個別の映画データにも紐付ける（分析用）
 		movie.Mood = req.Mood
 		movie.Score = req.Score
+		movie.SentimentLabel = req.SentimentLabel
 
 		batch.Set(docRef, movie)
 	}
