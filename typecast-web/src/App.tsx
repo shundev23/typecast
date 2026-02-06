@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 // アイコン
 import { Sparkles, Loader2, Brain, Lightbulb, LogIn, LogOut, User as UserIcon, Share2, Ban, X, ThumbsUp, ThumbsDown, Eye, Info, Moon, Sun, Languages } from 'lucide-react';
 // Firebase Auth (認証)
-import { signInWithPopup, signOut, onAuthStateChanged, type User } from 'firebase/auth';
+import { signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
 // チャートコンポーネント
 import { MoodChart } from './components/MoodChart';
@@ -60,12 +60,27 @@ function App() {
     document.documentElement.classList.toggle('dark', darkMode);
   }, [darkMode]);
 
-  // --- 1. ログイン状態の監視 ---
+  // --- 1. リダイレクト戻り & ログイン状態の監視 ---
   useEffect(() => {
+    let cancelled = false;
+
+    getRedirectResult(auth)
+      .then((cred) => {
+        if (cancelled) return;
+        if (cred?.user) setUser(cred.user);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error('Redirect sign-in error', err);
+      });
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+      if (!cancelled) setUser(currentUser);
     });
-    return () => unsubscribe();
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, []);
 
   // --- 2. ログイン時に履歴データをAPIから取得 ---
@@ -90,12 +105,10 @@ function App() {
 
   // --- ハンドラー関数 ---
 
-  const handleLogin = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (error) {
-      console.error("Login failed", error);
-    }
+  const handleLogin = () => {
+    signInWithRedirect(auth, googleProvider).catch((error) => {
+      console.error('Login redirect failed', error);
+    });
   };
 
   const handleLogout = async () => {
