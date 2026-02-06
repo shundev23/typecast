@@ -2,17 +2,34 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// typecast-v2 プロジェクト（環境変数で上書き可能）
-// ※ Googleログインで "API key expired" かつ details.service === "identitytoolkit.googleapis.com" の場合は
-//    この apiKey（Firebase Web API Key）が原因。GCP コンソール「認証情報」でキーを確認・更新し、
-//    .env の VITE_FIREBASE_API_KEY を差し替えること。（Gemini API Key とは別）
+// Firebase設定（全て環境変数から取得）
+// ※ 環境変数が未設定の場合はエラーを投げて早期に問題を検出
+const requiredEnvVars = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+};
+
+// 環境変数の検証
+Object.entries(requiredEnvVars).forEach(([key, value]) => {
+  if (!value) {
+    throw new Error(
+      `Firebase configuration error: ${key} is not defined. ` +
+      `Please set VITE_${key.replace(/([A-Z])/g, '_$1').toUpperCase()} in your .env file.`
+    );
+  }
+});
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDY-aJ2TJgL4LJ_Sv_ifRczB8BXyJA8UdE",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "typecast-v2.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "typecast-v2",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "typecast-v2.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "220731639324",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:220731639324:web:731545b9dd592646b8c1d9",
+  apiKey: requiredEnvVars.apiKey,
+  authDomain: requiredEnvVars.authDomain,
+  projectId: requiredEnvVars.projectId,
+  storageBucket: requiredEnvVars.storageBucket,
+  messagingSenderId: requiredEnvVars.messagingSenderId,
+  appId: requiredEnvVars.appId,
 };
 
 // Firebaseアプリの初期化

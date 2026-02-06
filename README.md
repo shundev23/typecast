@@ -205,6 +205,35 @@ High-level steps to run backend and frontend locally.
   - `DAILY_RECOMMEND_LIMIT`: 1日のレコメンド上限（例: 5）。GitHub Secrets に追加すること。未設定時はバックエンドのデフォルト 3 が使われる。
   - `FRONTEND_URL`, `API_BASE_URL`: シェアリンク・OGP 用。正しく設定しないとシェアが失敗する。
 - **Frontend (Firebase Hosting):** CI builds with `VITE_API_URL` from secrets and deploys the output to Firebase Hosting. The production app then talks to the Cloud Run API.
+- **Firestore Security Rules:** Deploy rules with `firebase deploy --only firestore:rules` to secure your database.
+
+### Security configuration
+
+#### Firestore Security Rules
+
+The project includes `firestore.rules` that enforce:
+- Users can only read/write their own data
+- Share links are publicly readable (for OGP)
+- Deleted identities are server-side only
+
+Deploy rules to production:
+```bash
+firebase deploy --only firestore:rules
+```
+
+#### Firebase API Key restrictions (recommended)
+
+For production security, configure API key restrictions in GCP Console:
+1. Go to **GCP Console > APIs & Services > Credentials**
+2. Find your Firebase Web API Key (`VITE_FIREBASE_API_KEY`)
+3. Add **Application restrictions**:
+   - HTTP referrers: `https://tycast.net/*`, `https://*.tycast.net/*`
+4. Add **API restrictions**:
+   - Identity Toolkit API
+   - Token Service API
+   - Cloud Firestore API
+
+This prevents unauthorized use of your Firebase API key from other domains.
 
 ---
 
