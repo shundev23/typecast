@@ -54,6 +54,40 @@ TYPECAST recommends movies based on MBTI psychological functions (Ti, Ne, Ni, Te
 
 The repository is a **monorepo**: frontend (`typecast-web`) and backend (Go API) live in one place. This keeps Cloud Run and Firebase Hosting configuration in GitHub Actions and makes it easy for anyone to clone and run the full stack.
 
+### Directory structure
+
+```
+typecast/
+├── .github/              # CI/CD workflows (deploy-backend.yml, deploy-frontend.yml)
+├── cmd/                  # Go application entry points
+│   └── api/              # API server main.go
+├── internal/             # Go internal packages
+│   ├── handler/          # HTTP handlers (account, feedback, history, recommend, share, ogp)
+│   ├── logic/            # Business logic (gemini, tmdb, mbti, user, etc.)
+│   ├── middleware/       # Auth middleware
+│   ├── model/            # Data models (DTOs, user, history)
+│   └── security/         # Security utilities (identity)
+├── typecast-web/         # Frontend React application
+│   ├── src/              # React source code
+│   │   ├── components/   # Reusable components
+│   │   ├── pages/        # Page components (MyPage, etc.)
+│   │   ├── services/     # API client services
+│   │   ├── lib/          # Utilities (apiClient)
+│   │   └── types/        # TypeScript type definitions
+│   └── public/           # Static assets
+├── docs/                 # Documentation and diagrams
+│   ├── diagrams/         # Mermaid diagrams (PNG exports)
+│   └── articles/         # Articles and writeups
+├── scripts/              # Development utility scripts
+├── assets/               # Shared assets (fonts, etc.)
+├── Dockerfile            # Backend container definition
+├── firebase.json         # Firebase Hosting configuration
+├── firestore.rules       # Firestore security rules
+├── go.mod / go.sum       # Go dependencies
+├── README.md             # This file
+└── SECURITY.md           # Security documentation
+```
+
 ### System architecture
 
 The diagram below reflects the actual layers: Frontend (Firebase Hosting), Backend (Cloud Run with Echo), and Data (Firestore, Gemini, TMDB). Export the Mermaid to PNG if needed.
@@ -87,7 +121,7 @@ flowchart TB
   Logic --> TMDB
 ```
 
-![alt text](mermaid-diagram-2026-02-06-090042-1.png)
+![System Architecture](docs/diagrams/mermaid-diagram-2026-02-06-090042-1.png)
 
 ### Layer roles
 
@@ -119,13 +153,13 @@ flowchart TB
 
 From the user tapping "Recommend" to receiving three movies with explanations.
 
-![alt text](mermaid-diagram-2026-02-06-091300.png)
+![Recommendation Flow](docs/diagrams/mermaid-diagram-2026-02-06-091300.png)
 
 ### Local development setup flow
 
 High-level steps to run backend and frontend locally.
 
-![alt text](mermaid-diagram-2026-02-06-091415.png)
+![Local Development Setup](docs/diagrams/mermaid-diagram-2026-02-06-091415.png)
 
 ---
 

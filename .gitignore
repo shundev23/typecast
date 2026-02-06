@@ -11,6 +11,10 @@
 *.dylib
 vendor/
 
+# スクリプトで生成されるバイナリ
+scripts/api
+scripts/check
+
 # Mac
 .DS_Store
 
@@ -18,7 +22,8 @@ vendor/
 .cursorrules
 
 # 内部ドキュメント（公開リポジトリに含めない）
-docs/
+# 注: docs/ 配下は整理済みのため、特定ファイルのみ除外
+docs/SERVICE_ACCOUNT_CHECKLIST.md
 
 # ログ（誤コミット防止）
 debug.log
