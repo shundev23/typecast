@@ -2,10 +2,13 @@
 
 ![TYPECAST Logo](./typecast-web/public/logo.png)
 
-**MBTI心理機能ベースの映画レコメンドサービス**
+**MBTI-based movie recommendation service**
 
-「感情」ではなく「論理」で映画を選ぶ。  
-TYPECASTは、MBTIの心理機能（Ti, Ne, Ni, Te など）を刺激するかどうかを基準に、AIが映画をレコメンドするWebアプリケーションです。
+Submitted to **the 4th Agentic AI Hackathon with Google Cloud**.
+
+https://zenn.dev/hackathons/google-cloud-japan-ai-hackathon-vol4
+
+TYPECAST recommends movies based on MBTI psychological functions (Ti, Ne, Ni, Te, etc.)—not just "mood." The AI explains *why* each film fits your type so you get logic-based suggestions instead of vague emotional tags.
 
 <p align="center">
   <img src="https://img.shields.io/badge/Go-1.23+-00ADD8?style=flat-square&logo=go" />
@@ -17,136 +20,156 @@ TYPECASTは、MBTIの心理機能（Ti, Ne, Ni, Te など）を刺激するか�
 
 ---
 
-## プロジェクト概要
+## Project overview
 
-### 対象ユーザー
+### Target users
 
-- **MBTIに興味があり、自分のタイプを知っている人**（特に分析志向の INTP / INTJ / ENTP など）
-- **「泣ける」「感動する」より、「脚本の整合性」「概念の拡張」「思考実験としての面白さ」を重視する人**
-- **何を観るか迷うとき、気分に合わせた映画を論理的な理由付きで知りたい人**
+- **People who know their MBTI type** and prefer logic over purely emotional labels (e.g. analytical types such as INTP, INTJ, ENTP).
+- **Users who care more about** script consistency, conceptual depth, and thought-experiment appeal than about "sad" or "feel-good" tags.
+- **Anyone who gets stuck choosing what to watch** and wants movie suggestions with clear, reason-based explanations that match their current mood and type.
 
-### 解決する課題
+### Problems we address
 
-- **感情ベースのレコメンドでは刺さらない**  
-  従来の「泣ける」「ハッピーになれる」といった指標では、論理・分析志向のユーザーには響きにくい。
-- **MBTIと映画の接続が曖昧**  
-  タイプ診断はあっても、「そのタイプに本当に合う作品」を心理機能の観点から説明するサービスが少ない。
-- **気分と履歴が活かされない**  
-  今の気分や過去に観た作品がレコメンドに反映されず、被りや的外れが起こりやすい。
+- **Emotion-only recommendations often miss.**  
+  Traditional cues like "makes you cry" or "feel-good" tend to resonate less with logic-oriented users.
+- **MBTI and movies are rarely connected in a clear way.**  
+  While type quizzes exist, few services explain *why* a film fits a type from a psychological-function perspective.
+- **Mood and history are underused.**  
+  When current mood and viewing history are not factored in, recommendations repeat or feel off-target.
 
-### ソリューションの特徴
+### Solution highlights
 
-- **心理機能ベースの論理レコメンド**  
-  16タイプそれぞれの主機能・補助機能（Ti/Ne/Ni/Te 等）を刺激するポイントを、AIが解説付きで提案する。
-- **気分 × 感情スコア**  
-  入力した「今の気分」をAIが分析し、ポジティブ/ネガティブ度（-5〜+5）を数値化。週間リズムの可視化にも利用。
-- **履歴連携・被り防止**  
-  過去に提案した映画を自動除外し、利用するほど新しい作品に出会える設計。
-- **視聴経路の明示**  
-  TMDB連携で日本国内の配信サービス（Netflix, U-NEXT, Prime Video 等）と直リンクを表示。
-
-## アーキテクチャ
-
-モノレポ構成で、フロントエンド（`typecast-web`）とバックエンド（Go API）を一元管理しています。
-
-![alt text](mermaid-diagram-2026-02-04-210238.png)
-
-### システム構成の要点
-
-| レイヤー | 役割 |
-|---------|------|
-| **Frontend** | React (Vite), Firebase Auth, 履歴・レコメンド・シェア・フィードバックのAPI呼び出し |
-| **API (Echo)** | 認証ミドルウェア、レート制限（1日N回 / `DAILY_RECOMMEND_LIMIT`）、ルーティング |
-| **Logic** | Gemini（レコメンド・感情スコア）、TMDB（メタデータ）、Firestore（履歴・ユーザー・シェア・OGP・フィードバック） |
-| **Data** | Firestore（ユーザー、履歴、シェア、フィードバック）、環境変数（APIキー等） |
+- **Psychology-function-based recommendations**  
+  For each of the 16 types, the AI uses main/auxiliary functions (Ti, Ne, Ni, Te, etc.) and suggests films with short explanations of why they match.
+- **Mood × emotion score**  
+  Free-text "mood" is analyzed by the AI and turned into a score (e.g. -5 to +5). This supports weekly trend views as data accumulates.
+- **History-aware, no repeats**  
+  Previously recommended titles are stored and automatically excluded from future recommendations so users keep discovering new options.
+- **Where to watch**  
+  TMDB integration shows direct links to streaming services (Netflix, U-NEXT, Prime Video, etc.) available in Japan.
 
 ---
 
-## 主な機能
+## Architecture
 
-- **Logic-Based Recommendation**  
-  16タイプ対応。心理機能（主・補助）の観点から「なぜこの映画か」をAIが解説。
-- **感情スコア & 週間リズム**  
-  気分テキストを -5〜+5 でスコア化。7日分溜まると週間チャートを表示。
-- **履歴・被り防止**  
-  提案映画をFirestoreに保存し、次回以降のレコメンドで自動除外。
-- **Watch Providers**  
-  TMDB連携で国内配信サービスと視聴リンクを表示。
-- **シェア**  
-  結果をX (Twitter) 用OGP付きリンクで共有。
+The repository is a **monorepo**: frontend (`typecast-web`) and backend (Go API) live in one place. This keeps Cloud Run and Firebase Hosting configuration in GitHub Actions and makes it easy for anyone to clone and run the full stack.
+
+### System architecture
+
+![alt text](mermaid-diagram-2026-02-06-090042-1.png)
+
+### Layer roles
+
+| Layer | Role |
+|-------|------|
+| **Frontend** | React (Vite), Firebase Auth, and API calls for history, recommend, share, and feedback. |
+| **API (Echo)** | Auth middleware, daily rate limit (N recommendations per day via `DAILY_RECOMMEND_LIMIT`), and routing. |
+| **Logic** | Gemini (recommendations, emotion score), TMDB (movie metadata), Firestore (history, user, share, OGP, feedback). |
+| **Data** | Firestore (users, history, share, feedback) and environment variables (API keys, etc.). |
 
 ---
 
-## テクノロジースタック
+## Main features
 
-| 区分 | 技術 |
-|------|------|
+- **Logic-based recommendation**  
+  Supports all 16 MBTI types. The AI explains *why* each film fits from a psychological-function (main/auxiliary) perspective.
+- **Emotion score & weekly rhythm**  
+  Mood text is scored (e.g. -5 to +5). After about a week of data, a weekly chart is available.
+- **History & no repeats**  
+  Recommended titles are stored in Firestore and automatically excluded in later recommendations.
+- **Watch providers**  
+  TMDB integration shows where to watch in Japan (streaming links).
+- **Share**  
+  Share results via a link that shows dynamic OGP for X (Twitter) (title, mood, score on the card).
+
+---
+
+### Recommendation flow
+
+From the user tapping "Recommend" to receiving three movies with explanations.
+
+![alt text](mermaid-diagram-2026-02-06-091300.png)
+
+### Local development setup flow
+
+High-level steps to run backend and frontend locally.
+
+![alt text](mermaid-diagram-2026-02-06-091415.png)
+
+---
+
+## Tech stack
+
+| Area | Technology |
+|------|------------|
 | **Frontend** | React 19, Vite, TypeScript, Tailwind CSS, Recharts, Lucide React |
 | **Backend** | Go, Echo |
 | **AI** | Google Gemini API (gemini-2.0-flash) |
-| **データソース** | TMDB API |
+| **Movie data** | TMDB API |
 | **DB / Auth** | Firebase Firestore, Firebase Authentication (Google) |
-| **インフラ** | Google Cloud Run (API), Firebase Hosting (SPA) |
+| **Infra** | Google Cloud Run (API), Firebase Hosting (SPA) |
 | **DevOps** | Docker, GitHub Actions (CI/CD) |
 
 ---
 
-## ローカル開発
+## Local development
 
-### 前提条件
+### Prerequisites
 
 - Go 1.23+
 - Node.js 20+
-- （任意）Docker
+- (Optional) Docker
 
-### セットアップ
+### Setup
 
-1. **リポジトリのクローン**
+1. **Clone the repository**
    ```bash
    git clone https://github.com/your-username/typecast.git
    cd typecast
    ```
 
-2. **バックエンド**
-   - プロジェクトルートに `.env` を作成:
-     ```bash
-     PORT=8080
-     GEMINI_API_KEY=your_gemini_key
-     TMDB_API_KEY=your_tmdb_key
-     VITE_FIREBASE_PROJECT_ID=typecast-v2
-     FIRESTORE_DB_NAME=(default)
-     # 必須: プロンプトテンプレート（リポジトリには含めず .env または本番は Secret で保持）
-     # GEMINI_PROMPT_TEMPLATE=改行は \n で表現。プレースホルダ %s は mbti, Main, Sub, mood, ignoreStr, Main, Sub の順
-     ```
-   - Firestore 用に `service-account.json` を配置（ローカル時）。
-   - 起動:
+2. **Backend**
+   - Create a `.env` file at the project root. Copy from `.env.example` and fill in values. Required variables:
+     - `PORT` — e.g. `8080`
+     - `GEMINI_API_KEY` — from Google AI Studio / Gemini API
+     - `TMDB_API_KEY` — from TMDB
+     - `VITE_FIREBASE_PROJECT_ID` — Firebase project ID (used by backend for Firestore)
+     - `FIRESTORE_DB_NAME` — e.g. `(default)`
+     - `GEMINI_PROMPT_TEMPLATE` — the system prompt for the recommendation personality. Use `\n` for newlines; not stored in the repo. Placeholders (e.g. `%s`) must match what the code expects (MBTI, main/sub function text, mood, ignore list, etc.).
+   - **Optional:** `DAILY_RECOMMEND_LIMIT` — max recommendations per user per day (default 3).
+   - Place `service-account.json` in the project root for local Firestore access (same project as `VITE_FIREBASE_PROJECT_ID`).
+   - Start the API:
      ```bash
      go run cmd/api/main.go
      ```
+   - The API listens on `http://localhost:8080` (or the port set in `PORT`).
 
-3. **フロントエンド**
-   - `typecast-web` に移動:
+3. **Frontend**
+   - Open the frontend app directory:
      ```bash
      cd typecast-web
      ```
-   - Firebase 設定を `src/firebase.ts` に記載（または .env から読み込み）。
-   - `.env` に API のベースURL を設定（ローカルは localhost、本番は Cloud Run URL）:
+   - Configure Firebase (e.g. in `src/firebase.ts` or via env). Ensure the same Firebase project is used if you rely on Auth/Firestore from the frontend.
+   - Create or edit `.env` and set the API base URL:
      ```bash
-     # ローカル開発時
+     # Local
      VITE_API_URL=http://localhost:8080
-     # 本番ビルド時（CI では GitHub Secrets の VITE_API_URL を使用）
-     # VITE_API_URL=https://typecast-api-220731639324.asia-northeast1.run.app
      ```
-   - **本番デプロイ**: GitHub Secrets の `VITE_API_URL` を `https://typecast-api-220731639324.asia-northeast1.run.app` に設定すると、フロントのビルドでこの API に接続します。
-   - **プロンプト**: 環境変数 `GEMINI_PROMPT_TEMPLATE` で指定（必須）。リポジトリには持たず、.env または本番は Cloud Run / Secret Manager で設定。改行は `\n`。
-   - 起動:
+     For production builds (e.g. in CI), set `VITE_API_URL` in GitHub Secrets to your Cloud Run API URL so the built bundle points to the correct backend.
+   - Install dependencies and start the dev server:
      ```bash
      npm install
      npm run dev
      ```
+   - The app runs at `http://localhost:5173` (or the port Vite shows).
 
-### ライセンス
+### Production deploy (brief)
+
+- **Backend (Cloud Run):** GitHub Actions builds the Docker image and deploys to Cloud Run. Secrets (e.g. `GEMINI_API_KEY`, `TMDB_API_KEY`, `FRONTEND_URL`, `API_BASE_URL`) are passed as environment variables at deploy time. Ensure `FRONTEND_URL` and `API_BASE_URL` are set correctly so share links and OGP image URLs point to production.
+- **Frontend (Firebase Hosting):** CI builds with `VITE_API_URL` from secrets and deploys the output to Firebase Hosting. The production app then talks to the Cloud Run API.
+
+---
+
+## License
 
 MIT License
-
-
