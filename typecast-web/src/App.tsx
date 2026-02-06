@@ -435,7 +435,7 @@ function App() {
                   <textarea
                     value={mood}
                     onChange={(e) => setMood(e.target.value)}
-                    placeholder="例: 仕事で理不尽なことがあってムシャクシャしてるから、とにかく派手にぶっ壊す映画が見たい。"
+                    placeholder={t(lang, 'moodPlaceholder')}
                     rows={3}
                     className="w-full bg-typecast-bg border border-typecast-border rounded-lg px-4 py-3 text-sm text-typecast-text placeholder-typecast-muted focus:border-typecast-accent focus:ring-2 focus:ring-typecast-accent/20 outline-none transition-all resize-none"
                     onKeyDown={(e) => {

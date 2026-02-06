@@ -7,6 +7,7 @@ export type I18nKey =
   | 'account'
   | 'mbtiType'
   | 'mood'
+  | 'moodPlaceholder'
   | 'analyzeRecommend'
   | 'shareOnX'
   | 'analysisResult'
@@ -68,6 +69,7 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     account: 'アカウント',
     mbtiType: 'MBTI タイプ',
     mood: '今の気分',
+    moodPlaceholder: '例: 仕事で理不尽なことがあってムシャクシャしてるから、とにかく派手にぶっ壊す映画が見たい。',
     analyzeRecommend: '分析して映画を提案',
     shareOnX: 'X でシェア',
     analysisResult: '分析結果',
@@ -129,6 +131,7 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     account: 'Account',
     mbtiType: 'MBTI Type',
     mood: 'Mood',
+    moodPlaceholder: "e.g. I'm frustrated at work and want to watch something that blows things up.",
     analyzeRecommend: 'Analyze & Recommend',
     shareOnX: 'Share on X',
     analysisResult: 'Analysis',
