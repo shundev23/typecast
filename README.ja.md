@@ -145,8 +145,12 @@ typecast/
 ├── firestore.rules       # Firestoreセキュリティルール
 ├── go.mod / go.sum       # Go依存関係
 ├── README.md             # 英語版README
-├── README.ja.md          # このファイル
-└── SECURITY.md           # セキュリティドキュメント
+├── README.ja.md          # このファイル（日本語）
+├── SECURITY.md           # セキュリティガイド（日本語）
+├── SECURITY.en.md        # セキュリティガイド（英語）
+├── CONTRIBUTING.md       # コントリビューションガイドライン（英語）
+├── CONTRIBUTING.ja.md    # コントリビューションガイドライン（日本語）
+└── CHANGELOG.md          # バージョン履歴とリリースノート
 ```
 
 ### システムアーキテクチャ
@@ -417,15 +421,23 @@ GCP ConsoleでAPIキー制限を設定：
 
 ---
 
-## ライセンス
+## コントリビューション
 
-MIT License
+コントリビューションを歓迎します！Pull Requestを送る前に、[コントリビューションガイドライン](./CONTRIBUTING.ja.md)をお読みください。
+
+セキュリティ関連の問題については、[セキュリティポリシー](./SECURITY.md)を参照してください。
 
 ---
 
-## コントリビューション
+## 変更履歴
 
-コントリビューションを歓迎します！Pull Requestをお気軽に送ってください。
+変更の詳細な履歴については、[CHANGELOG.md](./CHANGELOG.md)を参照してください。
+
+---
+
+## ライセンス
+
+MIT License
 
 ---
 

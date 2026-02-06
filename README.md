@@ -144,9 +144,13 @@ typecast/
 ├── firebase.json         # Firebase Hosting configuration
 ├── firestore.rules       # Firestore security rules
 ├── go.mod / go.sum       # Go dependencies
-├── README.md             # This file
+├── README.md             # This file (English)
 ├── README.ja.md          # Japanese README
-└── SECURITY.md           # Security documentation
+├── SECURITY.md           # Security guide (Japanese)
+├── SECURITY.en.md        # Security guide (English)
+├── CONTRIBUTING.md       # Contributing guidelines (English)
+├── CONTRIBUTING.ja.md    # Contributing guidelines (Japanese)
+└── CHANGELOG.md          # Version history and release notes
 ```
 
 ### System Architecture
@@ -412,15 +416,23 @@ For detailed security configuration, see [SECURITY.md](./SECURITY.md).
 
 ---
 
-## License
+## Contributing
 
-MIT License
+Contributions are welcome! Please read our [Contributing Guidelines](./CONTRIBUTING.md) before submitting a Pull Request.
+
+For security-related issues, please refer to our [Security Policy](./SECURITY.en.md).
 
 ---
 
-## Contributing
+## Changelog
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+See [CHANGELOG.md](./CHANGELOG.md) for a detailed history of changes.
+
+---
+
+## License
+
+MIT License
 
 ---
 

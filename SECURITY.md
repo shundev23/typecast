@@ -1,5 +1,7 @@
 # セキュリティガイド
 
+🌐 **[English version here](./SECURITY.en.md)**
+
 このドキュメントでは、TYPECASTプロジェクトのセキュリティ設定について説明します。
 
 ## 概要
