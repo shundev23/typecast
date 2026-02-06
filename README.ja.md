@@ -150,7 +150,8 @@ typecast/
 ├── SECURITY.en.md        # セキュリティガイド（英語）
 ├── CONTRIBUTING.md       # コントリビューションガイドライン（英語）
 ├── CONTRIBUTING.ja.md    # コントリビューションガイドライン（日本語）
-└── CHANGELOG.md          # バージョン履歴とリリースノート
+├── CHANGELOG.md          # バージョン履歴とリリースノート
+└── LICENSE               # MITライセンス
 ```
 
 ### システムアーキテクチャ
@@ -437,7 +438,7 @@ GCP ConsoleでAPIキー制限を設定：
 
 ## ライセンス
 
-MIT License
+このプロジェクトはMITライセンスの下でライセンスされています。詳細は[LICENSE](./LICENSE)ファイルを参照してください。
 
 ---
 

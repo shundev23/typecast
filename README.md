@@ -150,7 +150,8 @@ typecast/
 ├── SECURITY.en.md        # Security guide (English)
 ├── CONTRIBUTING.md       # Contributing guidelines (English)
 ├── CONTRIBUTING.ja.md    # Contributing guidelines (Japanese)
-└── CHANGELOG.md          # Version history and release notes
+├── CHANGELOG.md          # Version history and release notes
+└── LICENSE               # MIT License
 ```
 
 ### System Architecture
@@ -432,7 +433,7 @@ See [CHANGELOG.md](./CHANGELOG.md) for a detailed history of changes.
 
 ## License
 
-MIT License
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
 
 ---
 
