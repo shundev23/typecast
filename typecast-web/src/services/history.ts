@@ -16,6 +16,7 @@ export const historyService = {
     // 変換処理 (DTO -> Domain Model)
     return data.map((item) => ({
       ...item,
+      poster: item.poster ?? '',
       timestamp: new Date(item.timestamp),
     }));
   },

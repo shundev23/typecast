@@ -5,9 +5,32 @@ export type I18nKey =
   | 'loginWithGoogle'
   | 'logout'
   | 'account'
+  | 'myPage'
+  | 'myPageTitle'
+  | 'myPageEmpty'
   | 'mbtiType'
   | 'mood'
   | 'moodPlaceholder'
+  | 'mbtiGroupAnalysts'
+  | 'mbtiGroupDiplomats'
+  | 'mbtiGroupSentinels'
+  | 'mbtiGroupExplorers'
+  | 'mbtiINTJ'
+  | 'mbtiINTP'
+  | 'mbtiENTJ'
+  | 'mbtiENTP'
+  | 'mbtiINFJ'
+  | 'mbtiINFP'
+  | 'mbtiENFJ'
+  | 'mbtiENFP'
+  | 'mbtiISTJ'
+  | 'mbtiISFJ'
+  | 'mbtiESTJ'
+  | 'mbtiESFJ'
+  | 'mbtiISTP'
+  | 'mbtiISFP'
+  | 'mbtiESTP'
+  | 'mbtiESFP'
   | 'analyzeRecommend'
   | 'shareOnX'
   | 'analysisResult'
@@ -67,9 +90,32 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     loginWithGoogle: 'Google でログイン',
     logout: 'ログアウト',
     account: 'アカウント',
+    myPage: 'マイページ',
+    myPageTitle: 'レコメンド履歴',
+    myPageEmpty: 'まだレコメンド履歴がありません',
     mbtiType: 'MBTI タイプ',
     mood: '今の気分',
     moodPlaceholder: '例: 仕事で理不尽なことがあってムシャクシャしてるから、とにかく派手にぶっ壊す映画が見たい。',
+    mbtiGroupAnalysts: '分析家',
+    mbtiGroupDiplomats: '外交官',
+    mbtiGroupSentinels: '番人',
+    mbtiGroupExplorers: '探検家',
+    mbtiINTJ: '建築家',
+    mbtiINTP: '論理学者',
+    mbtiENTJ: '指揮官',
+    mbtiENTP: '討論者',
+    mbtiINFJ: '提唱者',
+    mbtiINFP: '仲介者',
+    mbtiENFJ: '主人公',
+    mbtiENFP: '運動家',
+    mbtiISTJ: '管理者',
+    mbtiISFJ: '擁護者',
+    mbtiESTJ: '幹部',
+    mbtiESFJ: '領事官',
+    mbtiISTP: '巨匠',
+    mbtiISFP: '冒険家',
+    mbtiESTP: '起業家',
+    mbtiESFP: 'エンターテイナー',
     analyzeRecommend: '分析して映画を提案',
     shareOnX: 'X でシェア',
     analysisResult: '分析結果',
@@ -129,9 +175,32 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     loginWithGoogle: 'Log in with Google',
     logout: 'Log out',
     account: 'Account',
+    myPage: 'My Page',
+    myPageTitle: 'Recommendation History',
+    myPageEmpty: 'No recommendations yet',
     mbtiType: 'MBTI Type',
     mood: 'Mood',
     moodPlaceholder: "e.g. I'm frustrated at work and want to watch something that blows things up.",
+    mbtiGroupAnalysts: 'Analysts',
+    mbtiGroupDiplomats: 'Diplomats',
+    mbtiGroupSentinels: 'Sentinels',
+    mbtiGroupExplorers: 'Explorers',
+    mbtiINTJ: 'Architect',
+    mbtiINTP: 'Logician',
+    mbtiENTJ: 'Commander',
+    mbtiENTP: 'Debater',
+    mbtiINFJ: 'Advocate',
+    mbtiINFP: 'Mediator',
+    mbtiENFJ: 'Protagonist',
+    mbtiENFP: 'Campaigner',
+    mbtiISTJ: 'Logistician',
+    mbtiISFJ: 'Defender',
+    mbtiESTJ: 'Executive',
+    mbtiESFJ: 'Consul',
+    mbtiISTP: 'Virtuoso',
+    mbtiISFP: 'Adventurer',
+    mbtiESTP: 'Entrepreneur',
+    mbtiESFP: 'Entertainer',
     analyzeRecommend: 'Analyze & Recommend',
     shareOnX: 'Share on X',
     analysisResult: 'Analysis',
@@ -198,5 +267,16 @@ export function tf(lang: Lang, key: I18nKey, vars: Record<string, string | numbe
     s = s.replaceAll(`{{${k}}}`, String(v));
   }
   return s;
+}
+
+const MBTI_TYPES = ['INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENFP', 'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ', 'ISTP', 'ISFP', 'ESTP', 'ESFP'] as const;
+type MbtiType = (typeof MBTI_TYPES)[number];
+
+export function mbtiLabel(lang: Lang, type: string): string {
+  const key = `mbti${type}` as I18nKey;
+  if (MBTI_TYPES.includes(type as MbtiType)) {
+    return t(lang, key);
+  }
+  return type;
 }
 

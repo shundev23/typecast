@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 // アイコン
-import { Sparkles, Loader2, Brain, Lightbulb, LogIn, LogOut, User as UserIcon, Share2, Ban, X, ThumbsUp, ThumbsDown, Eye, Info, Moon, Sun, Languages } from 'lucide-react';
+import { Sparkles, Loader2, Brain, Lightbulb, LogIn, LogOut, User as UserIcon, Share2, Ban, X, ThumbsUp, ThumbsDown, Eye, Info, Moon, Sun, Languages, Film } from 'lucide-react';
 // Firebase Auth (認証)
-import { signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, type User } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
 // チャートコンポーネント
 import { MoodChart } from './components/MoodChart';
@@ -15,7 +15,7 @@ import { shareService } from './services/share';
 // Types & Utils
 import type { Movie, HistoryItem } from './types';
 import { ApiError } from './lib/apiClient';
-import { t, tf, type Lang } from './i18n';
+import { t, tf, mbtiLabel, type Lang } from './i18n';
 
 function App() {
   // --- State管理 ---
@@ -31,6 +31,7 @@ function App() {
   const [usage, setUsage] = useState<{ limit: number; count: number; remaining: number } | null>(null);
   const [showGeminiQuotaModal, setShowGeminiQuotaModal] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showMyPageModal, setShowMyPageModal] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -105,15 +106,24 @@ function App() {
 
   // --- ハンドラー関数 ---
 
-  const handleLogin = () => {
-    signInWithRedirect(auth, googleProvider).catch((error) => {
-      console.error('Login redirect failed', error);
-    });
+  const handleLogin = async () => {
+    try {
+      if (import.meta.env.DEV) {
+        await signInWithPopup(auth, googleProvider);
+      } else {
+        await signInWithRedirect(auth, googleProvider);
+      }
+    } catch (error) {
+      console.error('Login failed', error);
+    }
   };
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
+      setMovies([]);
+      setMood('');
+      setUsage(null);
     } catch (error) {
       console.error("Logout failed", error);
     }
@@ -126,7 +136,7 @@ function App() {
     setDeletingAccount(true);
     try {
       const token = await user.getIdToken();
-      await accountService.deleteAccount(token, deleteConfirmText.trim());
+      await accountService.deleteAccount(token, 'DELETE');
       await signOut(auth);
 
       // UI state cleanup
@@ -184,13 +194,14 @@ function App() {
 
         // チャート即時更新用（再フェッチせずにstateに追加）
         setHistoryData(prev => [
-            ...prev, 
-            {
-                title: data.movies[0].title,
+            ...prev,
+            ...data.movies.map(m => ({
+                title: m.title,
+                poster: m.poster,
                 timestamp: new Date(),
                 score: data.sentiment_score,
                 mood: mood
-            }
+            }))
         ]);
       }
 
@@ -322,6 +333,16 @@ function App() {
                       )}
                     </div>
                     <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        setShowMyPageModal(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-typecast-muted hover:text-typecast-text hover:bg-typecast-bg transition-colors"
+                    >
+                      <UserIcon className="w-4 h-4" />
+                      <span>{t(lang, 'myPage')}</span>
+                    </button>
+                    <button
                       onClick={async () => {
                         setShowProfileMenu(false);
                         await handleLogout();
@@ -404,29 +425,29 @@ function App() {
                     onChange={(e) => setMbti(e.target.value)}
                     className="w-full bg-typecast-bg border border-typecast-border rounded-lg px-4 py-3 text-sm text-typecast-text focus:border-typecast-accent focus:ring-2 focus:ring-typecast-accent/20 outline-none transition-all"
                   >
-                    <optgroup label="Analysts (分析家)">
-                      <option value="INTJ">INTJ (建築家)</option>
-                      <option value="INTP">INTP (論理学者)</option>
-                      <option value="ENTJ">ENTJ (指揮官)</option>
-                      <option value="ENTP">ENTP (討論者)</option>
+                    <optgroup label={t(lang, 'mbtiGroupAnalysts')}>
+                      <option value="INTJ">INTJ ({mbtiLabel(lang, 'INTJ')})</option>
+                      <option value="INTP">INTP ({mbtiLabel(lang, 'INTP')})</option>
+                      <option value="ENTJ">ENTJ ({mbtiLabel(lang, 'ENTJ')})</option>
+                      <option value="ENTP">ENTP ({mbtiLabel(lang, 'ENTP')})</option>
                     </optgroup>
-                    <optgroup label="Diplomats (外交官)">
-                      <option value="INFJ">INFJ (提唱者)</option>
-                      <option value="INFP">INFP (仲介者)</option>
-                      <option value="ENFJ">ENFJ (主人公)</option>
-                      <option value="ENFP">ENFP (運動家)</option>
+                    <optgroup label={t(lang, 'mbtiGroupDiplomats')}>
+                      <option value="INFJ">INFJ ({mbtiLabel(lang, 'INFJ')})</option>
+                      <option value="INFP">INFP ({mbtiLabel(lang, 'INFP')})</option>
+                      <option value="ENFJ">ENFJ ({mbtiLabel(lang, 'ENFJ')})</option>
+                      <option value="ENFP">ENFP ({mbtiLabel(lang, 'ENFP')})</option>
                     </optgroup>
-                    <optgroup label="Sentinels (番人)">
-                      <option value="ISTJ">ISTJ (管理者)</option>
-                      <option value="ISFJ">ISFJ (擁護者)</option>
-                      <option value="ESTJ">ESTJ (幹部)</option>
-                      <option value="ESFJ">ESFJ (領事官)</option>
+                    <optgroup label={t(lang, 'mbtiGroupSentinels')}>
+                      <option value="ISTJ">ISTJ ({mbtiLabel(lang, 'ISTJ')})</option>
+                      <option value="ISFJ">ISFJ ({mbtiLabel(lang, 'ISFJ')})</option>
+                      <option value="ESTJ">ESTJ ({mbtiLabel(lang, 'ESTJ')})</option>
+                      <option value="ESFJ">ESFJ ({mbtiLabel(lang, 'ESFJ')})</option>
                     </optgroup>
-                    <optgroup label="Explorers (探検家)">
-                      <option value="ISTP">ISTP (巨匠)</option>
-                      <option value="ISFP">ISFP (冒険家)</option>
-                      <option value="ESTP">ESTP (起業家)</option>
-                      <option value="ESFP">ESFP (エンターテイナー)</option>
+                    <optgroup label={t(lang, 'mbtiGroupExplorers')}>
+                      <option value="ISTP">ISTP ({mbtiLabel(lang, 'ISTP')})</option>
+                      <option value="ISFP">ISFP ({mbtiLabel(lang, 'ISFP')})</option>
+                      <option value="ESTP">ESTP ({mbtiLabel(lang, 'ESTP')})</option>
+                      <option value="ESFP">ESFP ({mbtiLabel(lang, 'ESFP')})</option>
                     </optgroup>
                   </select>
                 </div>
@@ -758,6 +779,52 @@ function App() {
                   {deletingAccount ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : t(lang, 'accountDeleteConfirm')}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* マイページモーダル */}
+      {showMyPageModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowMyPageModal(false)} />
+          <div className="relative bg-typecast-surface rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-typecast-border shadow-typecast-lg">
+            <button
+              onClick={() => setShowMyPageModal(false)}
+              className="absolute top-4 right-4 text-typecast-muted hover:text-typecast-text"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-semibold text-typecast-text mb-4 flex items-center gap-2">
+              <Film className="w-5 h-5 text-typecast-accent" />
+              {t(lang, 'myPageTitle')}
+            </h2>
+            <div className="flex-1 overflow-y-auto">
+              {historyData.length === 0 ? (
+                <p className="text-typecast-muted text-center py-12">{t(lang, 'myPageEmpty')}</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {historyData.map((item, idx) => (
+                    <div key={`${item.title}-${item.timestamp.getTime()}-${idx}`} className="bg-typecast-bg rounded-xl overflow-hidden border border-typecast-border">
+                      <div className="aspect-[2/3] overflow-hidden">
+                        <img src={item.poster || '/logo.png'} alt={item.title} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="p-3">
+                        <h3 className="text-sm font-medium text-typecast-text line-clamp-2">{item.title}</h3>
+                        <p className="text-xs text-typecast-muted mt-1 line-clamp-2">{item.mood}</p>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className={`text-xs font-medium ${item.score > 0 ? 'text-typecast-accent' : item.score < 0 ? 'text-red-500' : 'text-typecast-secondary'}`}>
+                            {item.score > 0 ? '+' : ''}{item.score}
+                          </span>
+                          <span className="text-xs text-typecast-muted">
+                            {item.timestamp.toLocaleDateString(lang === 'ja' ? 'ja-JP' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

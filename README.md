@@ -194,6 +194,11 @@ High-level steps to run backend and frontend locally.
      ```
    - The app runs at `http://localhost:5173` (or the port Vite shows).
 
+### Localhost で Google ログインできない場合
+
+- **開発時は `signInWithPopup`**（ポップアップ）、**本番は `signInWithRedirect`**（リダイレクト）を使用しています。localhost ではポップアップ方式でログインします。
+- それでもログインできない場合、Firebase Console で **認証 → 設定 → 承認済みドメイン** に `localhost` が含まれているか確認してください。含まれていなければ追加してください。
+
 ### Production deploy (brief)
 
 - **Backend (Cloud Run):** GitHub Actions builds the Docker image and deploys to Cloud Run. Secrets (e.g. `GEMINI_API_KEY`, `TMDB_API_KEY`, `FRONTEND_URL`, `API_BASE_URL`) are passed as environment variables at deploy time. Ensure `FRONTEND_URL` and `API_BASE_URL` are set correctly so share links and OGP image URLs point to production.

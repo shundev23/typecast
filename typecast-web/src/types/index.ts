@@ -31,6 +31,7 @@ export type RecommendResponse = {
 // UIで使う履歴データ（Date型）
 export type HistoryItem = {
   title: string;
+  poster: string;
   timestamp: Date;
   score: number;
   mood: string;
@@ -39,6 +40,7 @@ export type HistoryItem = {
 // APIから返ってくる履歴データ（日付が文字列）
 export type ApiHistoryItem = {
   title: string;
+  poster?: string;
   timestamp: string;
   score: number;
   mood: string;
