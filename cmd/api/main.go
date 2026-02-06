@@ -145,5 +145,6 @@ func main() {
 		port = "8080"
 	}
 
+	log.Println("Starting server on port:", port)
 	e.Logger.Fatal(e.Start(":" + port))
 }

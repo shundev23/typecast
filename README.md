@@ -56,6 +56,37 @@ The repository is a **monorepo**: frontend (`typecast-web`) and backend (Go API)
 
 ### System architecture
 
+The diagram below reflects the actual layers: Frontend (Firebase Hosting), Backend (Cloud Run with Echo), and Data (Firestore, Gemini, TMDB). Export the Mermaid to PNG if needed.
+
+```mermaid
+flowchart TB
+  subgraph Client["Client"]
+    Browser["Browser (React SPA)"]
+  end
+
+  subgraph Frontend["Frontend (Firebase Hosting)"]
+    SPA["React + Vite\nFirebase Auth\nAPI calls"]
+  end
+
+  subgraph Backend["Backend (Cloud Run)"]
+    API["Echo API\nAuth middleware\nRate limit (DAILY_RECOMMEND_LIMIT)"]
+    Logic["Logic layer\nGemini, TMDB, Share, OGP"]
+  end
+
+  subgraph Data["Data & External"]
+    Firestore[(Firestore\nusers, history, share, feedback)]
+    Gemini[Gemini API]
+    TMDB[TMDB API]
+  end
+
+  Browser --> SPA
+  SPA --> API
+  API --> Logic
+  Logic --> Firestore
+  Logic --> Gemini
+  Logic --> TMDB
+```
+
 ![alt text](mermaid-diagram-2026-02-06-090042-1.png)
 
 ### Layer roles
