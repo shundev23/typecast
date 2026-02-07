@@ -25,31 +25,29 @@ Object.entries(requiredEnvVars).forEach(([key, value]) => {
 
 // authDomainを現在のホスト名に基づいて動的に設定
 // これにより、どのドメインでアクセスしても正しく認証できる
+// セキュリティ: 許可リストに含まれるドメインのみを受け入れる
 const getCurrentAuthDomain = (): string => {
   const hostname = window.location.hostname;
   
-  // 本番環境のカスタムドメイン
-  if (hostname === 'tycast.net' || hostname === 'www.tycast.net') {
-    return 'tycast.net';
-  }
+  // 許可されたドメインのマッピング（ホワイトリスト方式）
+  const allowedDomains: Record<string, string> = {
+    'tycast.net': 'tycast.net',
+    'www.tycast.net': 'tycast.net',
+    'typecast-v2.web.app': 'typecast-v2.web.app',
+    'typecast-v2.firebaseapp.com': 'typecast-v2.firebaseapp.com',
+    'localhost': requiredEnvVars.authDomain || 'typecast-v2.firebaseapp.com',
+    '127.0.0.1': requiredEnvVars.authDomain || 'typecast-v2.firebaseapp.com',
+  };
   
-  // Firebase Hostingのデフォルトドメイン
-  if (hostname === 'typecast-v2.web.app') {
-    return 'typecast-v2.web.app';
-  }
+  // ホワイトリストに含まれるドメインのみを許可
+  const authDomain = allowedDomains[hostname];
   
-  if (hostname === 'typecast-v2.firebaseapp.com') {
-    return 'typecast-v2.firebaseapp.com';
-  }
-  
-  // ローカル開発環境
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    // ローカルではデフォルトのauthDomainを使用
+  if (!authDomain) {
+    console.warn(`Unauthorized hostname detected: ${hostname}. Falling back to default authDomain.`);
     return requiredEnvVars.authDomain || 'typecast-v2.firebaseapp.com';
   }
   
-  // その他の場合は環境変数のデフォルト値を使用
-  return requiredEnvVars.authDomain || 'typecast-v2.firebaseapp.com';
+  return authDomain;
 };
 
 const authDomain = getCurrentAuthDomain();
