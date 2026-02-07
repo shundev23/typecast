@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 // Firebase設定（全て環境変数から取得）
@@ -32,6 +32,12 @@ const firebaseConfig = {
   appId: requiredEnvVars.appId,
 };
 
+// デバッグ用: Firebase設定をログ出力（APIキーは一部マスク）
+console.log('Firebase Config:', {
+  ...firebaseConfig,
+  apiKey: firebaseConfig.apiKey.substring(0, 10) + '...',
+});
+
 // Firebaseアプリの初期化
 const app = initializeApp(firebaseConfig);
 
@@ -39,3 +45,12 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 export const db = getFirestore(app, "typecast-db");
+
+// 認証の永続化を明示的に設定（ブラウザのローカルストレージに保存）
+setPersistence(auth, browserLocalPersistence)
+  .then(() => {
+    console.log('Auth persistence set to LOCAL');
+  })
+  .catch((error) => {
+    console.error('Failed to set auth persistence:', error);
+  });

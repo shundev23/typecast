@@ -107,20 +107,31 @@ function App() {
   useEffect(() => {
     let cancelled = false;
 
+    console.log('=== Auth initialization started ===');
+    console.log('Current auth state:', auth.currentUser?.uid || 'null');
+
     // リダイレクト結果を先に処理
     getRedirectResult(auth)
       .then((cred) => {
         if (cancelled) return;
         if (cred?.user) {
-          console.log('Redirect sign-in success:', cred.user.uid);
+          console.log('✅ Redirect sign-in success:', {
+            uid: cred.user.uid,
+            email: cred.user.email,
+            displayName: cred.user.displayName,
+          });
           setUser(cred.user);
         } else {
-          console.log('No redirect result');
+          console.log('ℹ️ No redirect result (normal page load)');
         }
       })
       .catch((err) => {
         if (cancelled) return;
-        console.error('Redirect sign-in error:', err);
+        console.error('❌ Redirect sign-in error:', {
+          code: err.code,
+          message: err.message,
+          fullError: err,
+        });
         // エラーの詳細をユーザーに表示
         if (err.code === 'auth/unauthorized-domain') {
           toast.error(t(lang, 'authDomainError') || 'このドメインは認証が許可されていません。管理者に連絡してください。');
@@ -134,7 +145,11 @@ function App() {
     // 認証状態の変更を監視
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (!cancelled) {
-        console.log('Auth state changed:', currentUser?.uid || 'null');
+        console.log('🔄 Auth state changed:', {
+          uid: currentUser?.uid || 'null',
+          email: currentUser?.email || 'null',
+          isAnonymous: currentUser?.isAnonymous,
+        });
         setUser(currentUser);
       }
     });
@@ -143,45 +158,70 @@ function App() {
       cancelled = true;
       unsubscribe();
     };
-  }, []);
+  }, [lang]);
 
   // --- 2. ログイン時に履歴データをAPIから取得 ---
   useEffect(() => {
     if (!user) {
+      console.log('User is null, clearing history data');
       setHistoryData([]);
       return;
     }
 
-   const fetchHistory = async () => {
+    console.log('User logged in, fetching history for:', user.uid);
+
+    const fetchHistory = async () => {
       try {
         const token = await user.getIdToken();
+        console.log('ID token obtained, calling history API...');
         const items = await historyService.fetchAll(token);
+        console.log('History fetched successfully:', items.length, 'items');
         setHistoryData(items);
       } catch (error) {
         console.error("Failed to fetch history:", error);
         // 履歴取得失敗は静かに処理（空配列のまま）
-        // エラートーストは映画推薦時のみ表示
+        // ただし、401エラーの場合は認証の問題がある可能性
+        if (error instanceof ApiError && error.status === 401) {
+          console.error('Authentication error: User may need to re-login');
+          toast.error(t(lang, 'loginError') || 'ログインに失敗しました。もう一度お試しください。');
+        }
       }
     };
 
     fetchHistory();
-  }, [user]);
+  }, [user, lang]);
 
   // --- ハンドラー関数 ---
 
   const handleLogin = async () => {
     try {
-      console.log('Login attempt started, DEV mode:', import.meta.env.DEV);
+      console.log('🔐 Login attempt started');
+      console.log('Environment:', {
+        isDev: import.meta.env.DEV,
+        mode: import.meta.env.MODE,
+        authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+      });
+      
       if (import.meta.env.DEV) {
+        console.log('Using popup sign-in (DEV mode)');
         const result = await signInWithPopup(auth, googleProvider);
-        console.log('Popup sign-in success:', result.user.uid);
+        console.log('✅ Popup sign-in success:', {
+          uid: result.user.uid,
+          email: result.user.email,
+        });
       } else {
-        console.log('Starting redirect sign-in...');
+        console.log('Using redirect sign-in (PROD mode)');
         await signInWithRedirect(auth, googleProvider);
+        console.log('Redirect initiated (page will reload)');
         // リダイレクトが開始されるため、この後のコードは実行されない
       }
     } catch (error: any) {
-      console.error('Login failed:', error);
+      console.error('❌ Login failed:', {
+        code: error.code,
+        message: error.message,
+        fullError: error,
+      });
+      
       if (error.code === 'auth/popup-closed-by-user') {
         toast.error(t(lang, 'loginCancelled') || 'ログインがキャンセルされました。');
       } else if (error.code === 'auth/unauthorized-domain') {
