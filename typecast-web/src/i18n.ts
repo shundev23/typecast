@@ -91,7 +91,11 @@ export type I18nKey =
   | 'accountDeletedCooldownUntil'
   | 'myPageAccessibility'
   | 'darkModeToggle'
-  | 'languageToggle';
+  | 'languageToggle'
+  | 'authDomainError'
+  | 'popupBlockedError'
+  | 'loginError'
+  | 'loginCancelled';
 
 const dict: Record<Lang, Record<I18nKey, string>> = {
   ja: {
@@ -187,6 +191,10 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     myPageAccessibility: 'アクセシビリティ',
     darkModeToggle: 'ダークモード切り替え',
     languageToggle: '言語切り替え',
+    authDomainError: 'このドメインは認証が許可されていません。管理者に連絡してください。',
+    popupBlockedError: 'ポップアップがブロックされました。ブラウザの設定を確認してください。',
+    loginError: 'ログインに失敗しました。もう一度お試しください。',
+    loginCancelled: 'ログインがキャンセルされました。',
   },
   en: {
     login: 'Log in',
@@ -281,6 +289,10 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     myPageAccessibility: 'Accessibility',
     darkModeToggle: 'Dark Mode Toggle',
     languageToggle: 'Language Toggle',
+    authDomainError: 'This domain is not authorized for authentication. Please contact the administrator.',
+    popupBlockedError: 'Popup was blocked. Please check your browser settings.',
+    loginError: 'Login failed. Please try again.',
+    loginCancelled: 'Login was cancelled.',
   },
 };
 

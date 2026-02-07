@@ -107,19 +107,38 @@ function App() {
   useEffect(() => {
     let cancelled = false;
 
+    // リダイレクト結果を先に処理
     getRedirectResult(auth)
       .then((cred) => {
         if (cancelled) return;
-        if (cred?.user) setUser(cred.user);
+        if (cred?.user) {
+          console.log('Redirect sign-in success:', cred.user.uid);
+          setUser(cred.user);
+        } else {
+          console.log('No redirect result');
+        }
       })
       .catch((err) => {
         if (cancelled) return;
-        console.error('Redirect sign-in error', err);
+        console.error('Redirect sign-in error:', err);
+        // エラーの詳細をユーザーに表示
+        if (err.code === 'auth/unauthorized-domain') {
+          toast.error(t(lang, 'authDomainError') || 'このドメインは認証が許可されていません。管理者に連絡してください。');
+        } else if (err.code === 'auth/popup-blocked') {
+          toast.error(t(lang, 'popupBlockedError') || 'ポップアップがブロックされました。ブラウザの設定を確認してください。');
+        } else {
+          toast.error(t(lang, 'loginError') || 'ログインに失敗しました。もう一度お試しください。');
+        }
       });
 
+    // 認証状態の変更を監視
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (!cancelled) setUser(currentUser);
+      if (!cancelled) {
+        console.log('Auth state changed:', currentUser?.uid || 'null');
+        setUser(currentUser);
+      }
     });
+    
     return () => {
       cancelled = true;
       unsubscribe();
@@ -152,13 +171,26 @@ function App() {
 
   const handleLogin = async () => {
     try {
+      console.log('Login attempt started, DEV mode:', import.meta.env.DEV);
       if (import.meta.env.DEV) {
-        await signInWithPopup(auth, googleProvider);
+        const result = await signInWithPopup(auth, googleProvider);
+        console.log('Popup sign-in success:', result.user.uid);
       } else {
+        console.log('Starting redirect sign-in...');
         await signInWithRedirect(auth, googleProvider);
+        // リダイレクトが開始されるため、この後のコードは実行されない
       }
-    } catch (error) {
-      console.error('Login failed', error);
+    } catch (error: any) {
+      console.error('Login failed:', error);
+      if (error.code === 'auth/popup-closed-by-user') {
+        toast.error(t(lang, 'loginCancelled') || 'ログインがキャンセルされました。');
+      } else if (error.code === 'auth/unauthorized-domain') {
+        toast.error(t(lang, 'authDomainError') || 'このドメインは認証が許可されていません。管理者に連絡してください。');
+      } else if (error.code === 'auth/popup-blocked') {
+        toast.error(t(lang, 'popupBlockedError') || 'ポップアップがブロックされました。ブラウザの設定を確認してください。');
+      } else {
+        toast.error(t(lang, 'loginError') || 'ログインに失敗しました。もう一度お試しください。');
+      }
     }
   };
 
