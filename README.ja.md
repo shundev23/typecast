@@ -156,7 +156,7 @@ typecast/
 
 ### システムアーキテクチャ
 
-![alt text](mermaid-diagram-2026-02-07-114512.png)
+![alt text](docs/diagrams/mermaid-diagram-2026-02-07-114512.png)
 
 ### レイヤーの役割
 
@@ -171,7 +171,7 @@ typecast/
 
 #### レコメンドフロー（詳細シーケンス）
 
-![alt text](mermaid-diagram-2026-02-07-114547.png)
+![alt text](docs/diagrams/mermaid-diagram-2026-02-07-114547.png)
 
 **主要ステップ：**
 
@@ -186,7 +186,7 @@ typecast/
 
 #### データモデル（Firestoreコレクション構造）
 
-![alt text](mermaid-diagram-2026-02-07-114622.png)
+![alt text](docs/diagrams/mermaid-diagram-2026-02-07-114622.png)
 
 
 **コレクション詳細：**
@@ -334,7 +334,7 @@ firebase deploy --only firestore:rules
 
 ### CI/CDパイプライン
 
-![alt text](mermaid-diagram-2026-02-07-114729.png)
+![alt text](docs/diagrams/mermaid-diagram-2026-02-07-114729.png)
 
 **パイプライントリガー：**
 
@@ -403,7 +403,7 @@ GitHub Secretsを設定：
 
 ### セキュリティアーキテクチャ
 
-![alt text](mermaid-diagram-2026-02-07-114825.png)
+![alt text](docs/diagrams/mermaid-diagram-2026-02-07-114825.png)
 
 **セキュリティ層：**
 

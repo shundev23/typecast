@@ -156,7 +156,7 @@ typecast/
 
 ### System Architecture
 
-![alt text](mermaid-diagram-2026-02-07-113555.png)
+![alt text](docs/diagrams/mermaid-diagram-2026-02-07-113555.png)
 
 
 ### Layer Roles
@@ -172,7 +172,7 @@ typecast/
 
 #### Recommendation Flow (Detailed Sequence)
 
-![alt text](mermaid-diagram-2026-02-07-113734.png)
+![alt text](docs/diagrams/mermaid-diagram-2026-02-07-113734.png)
 
 **Key Steps:**
 
@@ -187,7 +187,7 @@ typecast/
 
 #### Data Model (Firestore Collections)
 
-![alt text](mermaid-diagram-2026-02-07-113901.png)
+![alt text](docs/diagrams/mermaid-diagram-2026-02-07-113901.png)
 
 **Collection Details:**
 
@@ -329,7 +329,7 @@ firebase deploy --only firestore:rules
 
 ### CI/CD Pipeline
 
-![alt text](mermaid-diagram-2026-02-07-114207.png)
+![alt text](docs/diagrams/mermaid-diagram-2026-02-07-114207.png)
 
 **Pipeline Triggers:**
 
@@ -398,7 +398,7 @@ Push to `main` branch triggers GitHub Actions:
 
 ### Security Architecture
 
-![alt text](mermaid-diagram-2026-02-07-114330.png)
+![alt text](docs/diagrams/mermaid-diagram-2026-02-07-114330.png)
 
 **Security Layers:**
 
