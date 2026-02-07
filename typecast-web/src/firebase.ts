@@ -35,7 +35,7 @@ const firebaseConfig = {
 // デバッグ用: Firebase設定をログ出力（APIキーは一部マスク）
 console.log('Firebase Config:', {
   ...firebaseConfig,
-  apiKey: firebaseConfig.apiKey.substring(0, 10) + '...',
+  apiKey: firebaseConfig.apiKey ? firebaseConfig.apiKey.substring(0, 10) + '...' : 'undefined',
 });
 
 // Firebaseアプリの初期化
