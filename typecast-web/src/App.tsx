@@ -106,57 +106,67 @@ function App() {
   // --- 1. リダイレクト戻り & ログイン状態の監視 ---
   useEffect(() => {
     let cancelled = false;
+    let unsubscribe: (() => void) | null = null;
 
     console.log('=== Auth initialization started ===');
     console.log('Current auth state:', auth.currentUser?.uid || 'null');
 
-    // リダイレクト結果を先に処理
-    getRedirectResult(auth)
-      .then((cred) => {
+    // リダイレクト結果を先に処理してから、onAuthStateChangedを設定
+    const initAuth = async () => {
+      try {
+        const cred = await getRedirectResult(auth);
         if (cancelled) return;
+        
         if (cred?.user) {
           console.log('✅ Redirect sign-in success:', {
             uid: cred.user.uid,
             email: cred.user.email,
             displayName: cred.user.displayName,
           });
+          // リダイレクト結果がある場合は、明示的にユーザーを設定
           setUser(cred.user);
         } else {
           console.log('ℹ️ No redirect result (normal page load)');
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         if (cancelled) return;
+        const error = err as { code?: string; message?: string };
         console.error('❌ Redirect sign-in error:', {
-          code: err.code,
-          message: err.message,
+          code: error.code,
+          message: error.message,
           fullError: err,
         });
         // エラーの詳細をユーザーに表示
-        if (err.code === 'auth/unauthorized-domain') {
+        if (error.code === 'auth/unauthorized-domain') {
           toast.error(t(lang, 'authDomainError') || 'このドメインは認証が許可されていません。管理者に連絡してください。');
-        } else if (err.code === 'auth/popup-blocked') {
+        } else if (error.code === 'auth/popup-blocked') {
           toast.error(t(lang, 'popupBlockedError') || 'ポップアップがブロックされました。ブラウザの設定を確認してください。');
         } else {
           toast.error(t(lang, 'loginError') || 'ログインに失敗しました。もう一度お試しください。');
         }
-      });
-
-    // 認証状態の変更を監視
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (!cancelled) {
-        console.log('🔄 Auth state changed:', {
-          uid: currentUser?.uid || 'null',
-          email: currentUser?.email || 'null',
-          isAnonymous: currentUser?.isAnonymous,
-        });
-        setUser(currentUser);
       }
-    });
+
+      // getRedirectResult()の処理が完了してから、onAuthStateChangedを設定
+      if (!cancelled) {
+        console.log('Setting up onAuthStateChanged listener');
+        unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+          if (!cancelled) {
+            console.log('🔄 Auth state changed:', {
+              uid: currentUser?.uid || 'null',
+              email: currentUser?.email || 'null',
+              isAnonymous: currentUser?.isAnonymous,
+            });
+            setUser(currentUser);
+          }
+        });
+      }
+    };
+
+    initAuth();
     
     return () => {
       cancelled = true;
-      unsubscribe();
+      if (unsubscribe) unsubscribe();
     };
   }, [lang]);
 
@@ -215,11 +225,12 @@ function App() {
         console.log('Redirect initiated (page will reload)');
         // リダイレクトが開始されるため、この後のコードは実行されない
       }
-    } catch (error: any) {
+    } catch (err) {
+      const error = err as { code?: string; message?: string };
       console.error('❌ Login failed:', {
         code: error.code,
         message: error.message,
-        fullError: error,
+        fullError: err,
       });
       
       if (error.code === 'auth/popup-closed-by-user') {
