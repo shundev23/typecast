@@ -156,36 +156,8 @@ typecast/
 
 ### System Architecture
 
-```mermaid
-flowchart TB
-  subgraph Client["Client"]
-    Browser["Browser (React SPA)"]
-  end
+![alt text](mermaid-diagram-2026-02-07-113555.png)
 
-  subgraph Frontend["Frontend (Firebase Hosting)"]
-    SPA["React + Vite\nFirebase Auth\nAPI calls"]
-  end
-
-  subgraph Backend["Backend (Cloud Run)"]
-    API["Echo API\nAuth middleware\nRate limit"]
-    Logic["Logic layer\nGemini, TMDB, Share, OGP"]
-  end
-
-  subgraph Data["Data & External"]
-    Firestore[(Firestore\nusers, history, share, feedback)]
-    Gemini[Gemini API]
-    TMDB[TMDB API]
-  end
-
-  Browser --> SPA
-  SPA --> API
-  API --> Logic
-  Logic --> Firestore
-  Logic --> Gemini
-  Logic --> TMDB
-```
-
-![System Architecture](docs/diagrams/mermaid-diagram-2026-02-06-090042-1.png)
 
 ### Layer Roles
 
@@ -198,19 +170,34 @@ flowchart TB
 
 ### Data Flow
 
-#### Recommendation Flow
+#### Recommendation Flow (Detailed Sequence)
 
-![Recommendation Flow](docs/diagrams/mermaid-diagram-2026-02-06-091300.png)
+![alt text](mermaid-diagram-2026-02-07-113734.png)
 
-1. User submits MBTI type and current mood
-2. Backend fetches recommendation history from Firestore
-3. Gemini API generates 3 movie recommendations with explanations
-4. TMDB API enriches movie metadata (poster, streaming links)
-5. Results are saved to history and returned to frontend
+**Key Steps:**
 
-#### Local Development Setup Flow
+1. **Authentication**: User gets ID Token from Firebase Auth
+2. **Token Verification**: Auth middleware verifies token and checks cooldown
+3. **Rate Limiting**: Check daily recommendation count (default: 5 per day)
+4. **History Retrieval**: Fetch past recommendations to avoid duplicates
+5. **AI Generation**: Gemini API generates 3 movies + emotion score (-5 to +5)
+6. **Metadata Enrichment**: TMDB API adds poster images and streaming providers
+7. **History Save**: Store recommendation in Firestore
+8. **Response**: Return results with remaining daily quota
 
-![Local Development Setup](docs/diagrams/mermaid-diagram-2026-02-06-091415.png)
+#### Data Model (Firestore Collections)
+
+![alt text](mermaid-diagram-2026-02-07-113901.png)
+
+**Collection Details:**
+
+| Collection | Purpose | Security Rule |
+|------------|---------|---------------|
+| `users` | User profiles and rate limiting | Read/Write: Own document only |
+| `history` | Recommendation history | Read/Write: Own history only (`user_id` match) |
+| `share` | Public share links | Read: Anyone, Write: Own shares only |
+| `feedback` | User feedback | Read/Write: Own feedback only |
+| `deleted_identities` | Account deletion cooldown | Read/Write: Server-side only (blocked for clients) |
 
 ---
 
@@ -340,6 +327,22 @@ firebase deploy --only firestore:rules
 
 ## Deployment
 
+### CI/CD Pipeline
+
+![alt text](mermaid-diagram-2026-02-07-114207.png)
+
+**Pipeline Triggers:**
+
+| Workflow | Trigger | Paths Monitored |
+|----------|---------|-----------------|
+| Backend | Push to `main` | `cmd/**`, `internal/**`, `go.mod`, `Dockerfile`, `.github/workflows/deploy-backend.yml` |
+| Frontend | Push to `main` | `typecast-web/**`, `.github/workflows/deploy-frontend.yml` |
+
+**Deployment Flow:**
+
+1. **Backend**: Code → Docker Build → Artifact Registry (Osaka) → Cloud Run (Tokyo)
+2. **Frontend**: Code → npm build → Firebase Hosting (Global CDN)
+
 ### Backend (Cloud Run)
 
 #### Prerequisites
@@ -392,6 +395,19 @@ Push to `main` branch triggers GitHub Actions:
 ---
 
 ## Security
+
+### Security Architecture
+
+![alt text](mermaid-diagram-2026-02-07-114330.png)
+
+**Security Layers:**
+
+1. **Authentication**: Firebase Auth with Google Sign-In
+2. **Token Verification**: JWT validation via Firebase Admin SDK
+3. **Rate Limiting**: Daily quota enforcement (5 recommendations/day)
+4. **Authorization**: Firestore Security Rules (owner-only, public-read, server-only)
+5. **Anti-Abuse**: Account deletion cooldown (24 hours) to prevent abuse
+6. **Data Protection**: Environment variables, API key restrictions, service account isolation
 
 ### Firestore Security Rules
 

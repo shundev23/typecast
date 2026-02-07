@@ -156,36 +156,7 @@ typecast/
 
 ### システムアーキテクチャ
 
-```mermaid
-flowchart TB
-  subgraph Client["クライアント"]
-    Browser["ブラウザ (React SPA)"]
-  end
-
-  subgraph Frontend["フロントエンド (Firebase Hosting)"]
-    SPA["React + Vite\nFirebase Auth\nAPI呼び出し"]
-  end
-
-  subgraph Backend["バックエンド (Cloud Run)"]
-    API["Echo API\n認証ミドルウェア\nレート制限"]
-    Logic["ロジック層\nGemini, TMDB, Share, OGP"]
-  end
-
-  subgraph Data["データ & 外部API"]
-    Firestore[(Firestore\nusers, history, share, feedback)]
-    Gemini[Gemini API]
-    TMDB[TMDB API]
-  end
-
-  Browser --> SPA
-  SPA --> API
-  API --> Logic
-  Logic --> Firestore
-  Logic --> Gemini
-  Logic --> TMDB
-```
-
-![システムアーキテクチャ](docs/diagrams/mermaid-diagram-2026-02-06-090042-1.png)
+![alt text](mermaid-diagram-2026-02-07-114512.png)
 
 ### レイヤーの役割
 
@@ -198,19 +169,35 @@ flowchart TB
 
 ### データフロー
 
-#### レコメンドフロー
+#### レコメンドフロー（詳細シーケンス）
 
-![レコメンドフロー](docs/diagrams/mermaid-diagram-2026-02-06-091300.png)
+![alt text](mermaid-diagram-2026-02-07-114547.png)
 
-1. ユーザーがMBTIタイプと現在の気分を送信
-2. バックエンドがFirestoreから推薦履歴を取得
-3. Gemini APIが3本の映画を推薦し、理由を説明
-4. TMDB APIが映画のメタデータ（ポスター、配信リンク）を補完
-5. 結果を履歴に保存し、フロントエンドに返却
+**主要ステップ：**
 
-#### ローカル開発セットアップフロー
+1. **認証**: ユーザーがFirebase AuthからID Tokenを取得
+2. **トークン検証**: 認証ミドルウェアがトークンを検証し、クールダウンをチェック
+3. **レート制限**: 日次推薦回数をチェック（デフォルト: 1日5回）
+4. **履歴取得**: 過去の推薦を取得して重複を回避
+5. **AI生成**: Gemini APIが3本の映画 + 感情スコア（-5〜+5）を生成
+6. **メタデータ補完**: TMDB APIがポスター画像と配信サービスを追加
+7. **履歴保存**: Firestoreに推薦結果を保存
+8. **レスポンス**: 残り回数とともに結果を返却
 
-![ローカル開発セットアップ](docs/diagrams/mermaid-diagram-2026-02-06-091415.png)
+#### データモデル（Firestoreコレクション構造）
+
+![alt text](mermaid-diagram-2026-02-07-114622.png)
+
+
+**コレクション詳細：**
+
+| コレクション | 用途 | セキュリティルール |
+|------------|------|------------------|
+| `users` | ユーザープロフィールとレート制限 | 読み書き: 自分のドキュメントのみ |
+| `history` | 推薦履歴 | 読み書き: 自分の履歴のみ（`user_id`一致） |
+| `share` | 公開シェアリンク | 読み取り: 誰でも可、書き込み: 自分のシェアのみ |
+| `feedback` | ユーザーフィードバック | 読み書き: 自分のフィードバックのみ |
+| `deleted_identities` | アカウント削除クールダウン | 読み書き: サーバーサイドのみ（クライアントはブロック） |
 
 ---
 
@@ -345,6 +332,22 @@ firebase deploy --only firestore:rules
 
 ## デプロイ
 
+### CI/CDパイプライン
+
+![alt text](mermaid-diagram-2026-02-07-114729.png)
+
+**パイプライントリガー：**
+
+| ワークフロー | トリガー | 監視対象パス |
+|----------|---------|------------|
+| バックエンド | `main`へのプッシュ | `cmd/**`, `internal/**`, `go.mod`, `Dockerfile`, `.github/workflows/deploy-backend.yml` |
+| フロントエンド | `main`へのプッシュ | `typecast-web/**`, `.github/workflows/deploy-frontend.yml` |
+
+**デプロイフロー：**
+
+1. **バックエンド**: コード → Dockerビルド → Artifact Registry（大阪） → Cloud Run（東京）
+2. **フロントエンド**: コード → npmビルド → Firebase Hosting（グローバルCDN）
+
 ### バックエンド（Cloud Run）
 
 #### 前提条件
@@ -397,6 +400,19 @@ GitHub Secretsを設定：
 ---
 
 ## セキュリティ
+
+### セキュリティアーキテクチャ
+
+![alt text](mermaid-diagram-2026-02-07-114825.png)
+
+**セキュリティ層：**
+
+1. **認証**: Firebase AuthによるGoogleサインイン
+2. **トークン検証**: Firebase Admin SDKによるJWT検証
+3. **レート制限**: 日次クォータの強制（1日5回の推薦）
+4. **認可**: Firestoreセキュリティルール（所有者のみ、公開読み取り、サーバーのみ）
+5. **不正利用対策**: アカウント削除クールダウン（24時間）で悪用を防止
+6. **データ保護**: 環境変数、APIキー制限、サービスアカウント分離
 
 ### Firestoreセキュリティルール
 
