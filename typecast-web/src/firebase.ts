@@ -23,9 +23,44 @@ Object.entries(requiredEnvVars).forEach(([key, value]) => {
   }
 });
 
+// authDomainを現在のホスト名に基づいて動的に設定
+// これにより、どのドメインでアクセスしても正しく認証できる
+const getCurrentAuthDomain = (): string => {
+  const hostname = window.location.hostname;
+  
+  // 本番環境のカスタムドメイン
+  if (hostname === 'tycast.net' || hostname === 'www.tycast.net') {
+    return 'tycast.net';
+  }
+  
+  // Firebase Hostingのデフォルトドメイン
+  if (hostname === 'typecast-v2.web.app') {
+    return 'typecast-v2.web.app';
+  }
+  
+  if (hostname === 'typecast-v2.firebaseapp.com') {
+    return 'typecast-v2.firebaseapp.com';
+  }
+  
+  // ローカル開発環境
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    // ローカルではデフォルトのauthDomainを使用
+    return requiredEnvVars.authDomain || 'typecast-v2.firebaseapp.com';
+  }
+  
+  // その他の場合は環境変数のデフォルト値を使用
+  return requiredEnvVars.authDomain || 'typecast-v2.firebaseapp.com';
+};
+
+const authDomain = getCurrentAuthDomain();
+console.log('Selected authDomain based on hostname:', {
+  hostname: window.location.hostname,
+  authDomain: authDomain,
+});
+
 const firebaseConfig = {
   apiKey: requiredEnvVars.apiKey,
-  authDomain: requiredEnvVars.authDomain,
+  authDomain: authDomain,
   projectId: requiredEnvVars.projectId,
   storageBucket: requiredEnvVars.storageBucket,
   messagingSenderId: requiredEnvVars.messagingSenderId,
