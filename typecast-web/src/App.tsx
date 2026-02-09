@@ -466,6 +466,9 @@ function HomePage({
 }: HomePageProps) {
   const navigate = useNavigate();
   
+  // IME入力中かどうかを管理するstate
+  const [isComposing, setIsComposing] = useState(false);
+  
   return (
     <div className="min-h-screen bg-typecast-bg text-typecast-text flex flex-col">
       {/* ヘッダー: シンプル・余白を活かした Airbnb 風 */}
@@ -608,8 +611,11 @@ function HomePage({
                     placeholder={t(lang, 'moodPlaceholder')}
                     rows={3}
                     className="w-full bg-typecast-bg border border-typecast-border rounded-lg px-4 py-3 text-sm text-typecast-text placeholder-typecast-muted focus:border-typecast-accent focus:ring-2 focus:ring-typecast-accent/20 outline-none transition-all resize-none"
+                    onCompositionStart={() => setIsComposing(true)}
+                    onCompositionEnd={() => setIsComposing(false)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
+                      // IME変換中はEnterキーを無視
+                      if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
                         e.preventDefault();
                         handleRecommend();
                       }
