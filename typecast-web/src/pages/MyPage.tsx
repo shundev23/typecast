@@ -165,28 +165,33 @@ export function MyPage({ user, lang, setLang, darkMode, setDarkMode }: MyPagePro
                 <div>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
                     <h2 className="text-lg font-semibold text-typecast-text">{t(lang, 'myPageHistory')}</h2>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-typecast-muted">{t(lang, 'filterByMood')}:</span>
-                      <select
-                        value={historyFilter}
-                        onChange={(e) => setHistoryFilter(e.target.value)}
-                        className="bg-typecast-bg border border-typecast-border rounded-lg px-3 py-1.5 text-sm text-typecast-text"
-                      >
-                        <option value="">{t(lang, 'filterAll')}</option>
-                        {Array.from(new Set(historyData.map((h) => h.sentiment_label).filter(Boolean))).map((label) => (
-                          <option key={label} value={label}>{label}</option>
-                        ))}
-                      </select>
-                    </div>
+                    {historyData.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-typecast-muted">{t(lang, 'filterByMood')}:</span>
+                        <select
+                          value={historyFilter}
+                          onChange={(e) => setHistoryFilter(e.target.value)}
+                          className="bg-typecast-bg border border-typecast-border rounded-lg px-3 py-1.5 text-sm text-typecast-text"
+                        >
+                          <option value="">{t(lang, 'filterAll')}</option>
+                          {Array.from(new Set(historyData.map((h) => h.sentiment_label).filter(Boolean))).map((label) => (
+                            <option key={label} value={label}>{label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </div>
                   <div className="overflow-y-auto max-h-[calc(100vh-300px)]">
                     {historyData.length === 0 ? (
                       <p className="text-typecast-muted text-center py-12">{t(lang, 'myPageEmpty')}</p>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {historyData
-                          .filter((item) => !historyFilter || item.sentiment_label === historyFilter)
-                          .map((item, idx) => (
+                      (() => {
+                        const filteredData = historyData.filter((item) => !historyFilter || item.sentiment_label === historyFilter);
+                        return filteredData.length === 0 ? (
+                          <p className="text-typecast-muted text-center py-12">{t(lang, 'myPageEmpty')}</p>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredData.map((item, idx) => (
                             <div key={`${item.title}-${item.timestamp.getTime()}-${idx}`} className="bg-typecast-bg rounded-2xl overflow-hidden border border-typecast-border shadow-typecast group">
                               <div className="relative aspect-[2/3] overflow-hidden">
                                 <img src={item.poster || '/logo.png'} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -240,8 +245,10 @@ export function MyPage({ user, lang, setLang, darkMode, setDarkMode }: MyPagePro
                                 </div>
                               </div>
                             </div>
-                          ))}
-                      </div>
+                            ))}
+                          </div>
+                        );
+                      })()
                     )}
                   </div>
                 </div>
@@ -252,28 +259,33 @@ export function MyPage({ user, lang, setLang, darkMode, setDarkMode }: MyPagePro
                 <div>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
                     <h2 className="text-lg font-semibold text-typecast-text">{t(lang, 'myPageRatings')}</h2>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-typecast-muted">{t(lang, 'filterByRating')}:</span>
-                      <select
-                        value={feedbackFilter}
-                        onChange={(e) => setFeedbackFilter(e.target.value)}
-                        className="bg-typecast-bg border border-typecast-border rounded-lg px-3 py-1.5 text-sm text-typecast-text"
-                      >
-                        <option value="">{t(lang, 'filterAll')}</option>
-                        <option value="good">{t(lang, 'like')}</option>
-                        <option value="bad">{t(lang, 'dislike')}</option>
-                        <option value="watched">{t(lang, 'watched')}</option>
-                      </select>
-                    </div>
+                    {feedbackData.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-typecast-muted">{t(lang, 'filterByRating')}:</span>
+                        <select
+                          value={feedbackFilter}
+                          onChange={(e) => setFeedbackFilter(e.target.value)}
+                          className="bg-typecast-bg border border-typecast-border rounded-lg px-3 py-1.5 text-sm text-typecast-text"
+                        >
+                          <option value="">{t(lang, 'filterAll')}</option>
+                          <option value="good">{t(lang, 'like')}</option>
+                          <option value="bad">{t(lang, 'dislike')}</option>
+                          <option value="watched">{t(lang, 'watched')}</option>
+                        </select>
+                      </div>
+                    )}
                   </div>
                   <div className="overflow-y-auto max-h-[calc(100vh-300px)]">
                     {feedbackData.length === 0 ? (
                       <p className="text-typecast-muted text-center py-12">{t(lang, 'myPageRatingsEmpty')}</p>
                     ) : (
-                      <div className="space-y-3">
-                        {feedbackData
-                          .filter((item) => !feedbackFilter || item.type === feedbackFilter)
-                          .map((item, idx) => {
+                      (() => {
+                        const filteredFeedback = feedbackData.filter((item) => !feedbackFilter || item.type === feedbackFilter);
+                        return filteredFeedback.length === 0 ? (
+                          <p className="text-typecast-muted text-center py-12">{t(lang, 'myPageRatingsEmpty')}</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {filteredFeedback.map((item, idx) => {
                             const typeLabel = item.type === 'good' ? t(lang, 'like') : item.type === 'bad' ? t(lang, 'dislike') : t(lang, 'watched');
                             const typeColor = item.type === 'good' ? 'text-typecast-accent' : item.type === 'bad' ? 'text-red-500' : 'text-green-600';
                             const typeIcon = item.type === 'good' ? ThumbsUp : item.type === 'bad' ? ThumbsDown : Eye;
@@ -295,8 +307,10 @@ export function MyPage({ user, lang, setLang, darkMode, setDarkMode }: MyPagePro
                                 </div>
                               </div>
                             );
-                          })}
-                      </div>
+                            })}
+                          </div>
+                        );
+                      })()
                     )}
                   </div>
                 </div>
