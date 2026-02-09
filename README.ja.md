@@ -135,9 +135,6 @@ typecast/
 │   │   ├── lib/          # ユーティリティ（apiClient）
 │   │   └── types/        # TypeScript型定義
 │   └── public/           # 静的アセット
-├── docs/                 # ドキュメントと図表
-│   ├── diagrams/         # Mermaid図表（PNG出力）
-│   └── articles/         # 記事・解説
 ├── scripts/              # 開発用ユーティリティスクリプト
 ├── assets/               # 共有アセット（フォントなど）
 ├── Dockerfile            # バックエンドコンテナ定義
@@ -146,17 +143,9 @@ typecast/
 ├── go.mod / go.sum       # Go依存関係
 ├── README.md             # 英語版README
 ├── README.ja.md          # このファイル（日本語）
-├── SECURITY.md           # セキュリティガイド（日本語）
-├── SECURITY.en.md        # セキュリティガイド（英語）
-├── CONTRIBUTING.md       # コントリビューションガイドライン（英語）
-├── CONTRIBUTING.ja.md    # コントリビューションガイドライン（日本語）
 ├── CHANGELOG.md          # バージョン履歴とリリースノート
 └── LICENSE               # MITライセンス
 ```
-
-### システムアーキテクチャ
-
-![alt text](docs/diagrams/mermaid-diagram-2026-02-07-114512.png)
 
 ### レイヤーの役割
 
@@ -169,9 +158,7 @@ typecast/
 
 ### データフロー
 
-#### レコメンドフロー（詳細シーケンス）
-
-![alt text](docs/diagrams/mermaid-diagram-2026-02-07-114547.png)
+#### レコメンドフロー
 
 **主要ステップ：**
 
@@ -185,9 +172,6 @@ typecast/
 8. **レスポンス**: 残り回数とともに結果を返却
 
 #### データモデル（Firestoreコレクション構造）
-
-![alt text](docs/diagrams/mermaid-diagram-2026-02-07-114622.png)
-
 
 **コレクション詳細：**
 
@@ -334,8 +318,6 @@ firebase deploy --only firestore:rules
 
 ### CI/CDパイプライン
 
-![alt text](docs/diagrams/mermaid-diagram-2026-02-07-114729.png)
-
 **パイプライントリガー：**
 
 | ワークフロー | トリガー | 監視対象パス |
@@ -403,8 +385,6 @@ GitHub Secretsを設定：
 
 ### セキュリティアーキテクチャ
 
-![alt text](docs/diagrams/mermaid-diagram-2026-02-07-114825.png)
-
 **セキュリティ層：**
 
 1. **認証**: Firebase AuthによるGoogleサインイン
@@ -433,16 +413,6 @@ GCP ConsoleでAPIキー制限を設定：
    - Identity Toolkit API
    - Token Service API
    - Cloud Firestore API
-
-詳細なセキュリティ設定については、[SECURITY.md](./SECURITY.md) を参照してください。
-
----
-
-## コントリビューション
-
-コントリビューションを歓迎します！Pull Requestを送る前に、[コントリビューションガイドライン](./CONTRIBUTING.ja.md)をお読みください。
-
-セキュリティ関連の問題については、[セキュリティポリシー](./SECURITY.md)を参照してください。
 
 ---
 

@@ -135,9 +135,6 @@ typecast/
 │   │   ├── lib/          # Utilities (apiClient)
 │   │   └── types/        # TypeScript type definitions
 │   └── public/           # Static assets
-├── docs/                 # Documentation and diagrams
-│   ├── diagrams/         # Mermaid diagrams (PNG exports)
-│   └── articles/         # Articles and writeups
 ├── scripts/              # Development utility scripts
 ├── assets/               # Shared assets (fonts, etc.)
 ├── Dockerfile            # Backend container definition
@@ -146,18 +143,9 @@ typecast/
 ├── go.mod / go.sum       # Go dependencies
 ├── README.md             # This file (English)
 ├── README.ja.md          # Japanese README
-├── SECURITY.md           # Security guide (Japanese)
-├── SECURITY.en.md        # Security guide (English)
-├── CONTRIBUTING.md       # Contributing guidelines (English)
-├── CONTRIBUTING.ja.md    # Contributing guidelines (Japanese)
 ├── CHANGELOG.md          # Version history and release notes
 └── LICENSE               # MIT License
 ```
-
-### System Architecture
-
-![alt text](docs/diagrams/mermaid-diagram-2026-02-07-113555.png)
-
 
 ### Layer Roles
 
@@ -170,9 +158,7 @@ typecast/
 
 ### Data Flow
 
-#### Recommendation Flow (Detailed Sequence)
-
-![alt text](docs/diagrams/mermaid-diagram-2026-02-07-113734.png)
+#### Recommendation Flow
 
 **Key Steps:**
 
@@ -186,8 +172,6 @@ typecast/
 8. **Response**: Return results with remaining daily quota
 
 #### Data Model (Firestore Collections)
-
-![alt text](docs/diagrams/mermaid-diagram-2026-02-07-113901.png)
 
 **Collection Details:**
 
@@ -329,8 +313,6 @@ firebase deploy --only firestore:rules
 
 ### CI/CD Pipeline
 
-![alt text](docs/diagrams/mermaid-diagram-2026-02-07-114207.png)
-
 **Pipeline Triggers:**
 
 | Workflow | Trigger | Paths Monitored |
@@ -398,8 +380,6 @@ Push to `main` branch triggers GitHub Actions:
 
 ### Security Architecture
 
-![alt text](docs/diagrams/mermaid-diagram-2026-02-07-114330.png)
-
 **Security Layers:**
 
 1. **Authentication**: Firebase Auth with Google Sign-In
@@ -428,16 +408,6 @@ Configure API key restrictions in GCP Console:
    - Identity Toolkit API
    - Token Service API
    - Cloud Firestore API
-
-For detailed security configuration, see [SECURITY.md](./SECURITY.md).
-
----
-
-## Contributing
-
-Contributions are welcome! Please read our [Contributing Guidelines](./CONTRIBUTING.md) before submitting a Pull Request.
-
-For security-related issues, please refer to our [Security Policy](./SECURITY.en.md).
 
 ---
 

@@ -99,11 +99,3 @@ This is the initial release of TYPECAST, submitted to the 4th Agentic AI Hackath
 - Enhanced analytics and insights
 
 ---
-
-## Contributing
-
-For information on how to contribute to this project, please see [CONTRIBUTING.md](./CONTRIBUTING.md).
-
-## Security
-
-For security-related information, please see [SECURITY.md](./SECURITY.md).
