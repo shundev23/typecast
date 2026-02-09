@@ -23,10 +23,10 @@ import { t, type Lang } from '../i18n';
 import { historyService } from '../services/history';
 import { accountService } from '../services/account';
 import { feedbackService } from '../services/feedback';
-import type { HistoryItem } from '../types';
+import type { HistoryItem, Feedback } from '../types';
 import toast from 'react-hot-toast';
 
-type MenuItem = 'history' | 'accessibility' | 'account';
+type MenuItem = 'history' | 'ratings' | 'accessibility' | 'account';
 
 interface MyPageProps {
   user: User;
@@ -41,6 +41,8 @@ export function MyPage({ user, lang, setLang, darkMode, setDarkMode }: MyPagePro
   const [selectedMenu, setSelectedMenu] = useState<MenuItem>('history');
   const [historyData, setHistoryData] = useState<HistoryItem[]>([]);
   const [historyFilter, setHistoryFilter] = useState<string>('');
+  const [feedbackData, setFeedbackData] = useState<Feedback[]>([]);
+  const [feedbackFilter, setFeedbackFilter] = useState<string>('');
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -51,6 +53,14 @@ export function MyPage({ user, lang, setLang, darkMode, setDarkMode }: MyPagePro
     if (!user) return;
     user.getIdToken().then((token) => {
       historyService.fetchAll(token).then(setHistoryData).catch(console.error);
+    }).catch(console.error);
+  }, [user]);
+
+  // 評価データの取得
+  useEffect(() => {
+    if (!user) return;
+    user.getIdToken().then((token) => {
+      feedbackService.getFeedbacks(token).then(setFeedbackData).catch(console.error);
     }).catch(console.error);
   }, [user]);
 
@@ -90,6 +100,10 @@ export function MyPage({ user, lang, setLang, darkMode, setDarkMode }: MyPagePro
       await feedbackService.sendFeedback(movieTitle, type, token);
       const label = type === 'good' ? t(lang, 'like') : type === 'bad' ? t(lang, 'dislike') : t(lang, 'watched');
       toast.success(`${label}${t(lang, 'feedbackSaved')}`);
+      
+      // 評価データを再取得して即座に反映
+      const updatedFeedbacks = await feedbackService.getFeedbacks(token);
+      setFeedbackData(updatedFeedbacks);
     } catch (error) {
       console.error('Feedback error:', error);
       toast.error(t(lang, 'feedbackFailed'));
@@ -98,6 +112,7 @@ export function MyPage({ user, lang, setLang, darkMode, setDarkMode }: MyPagePro
 
   const menuItems = [
     { id: 'history' as MenuItem, icon: Film, label: t(lang, 'myPageHistory') },
+    { id: 'ratings' as MenuItem, icon: ThumbsUp, label: t(lang, 'myPageRatings') },
     { id: 'accessibility' as MenuItem, icon: Accessibility, label: t(lang, 'myPageAccessibility') },
     { id: 'account' as MenuItem, icon: Settings, label: t(lang, 'myPageAccount') },
   ];
@@ -226,6 +241,61 @@ export function MyPage({ user, lang, setLang, darkMode, setDarkMode }: MyPagePro
                               </div>
                             </div>
                           ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* 評価履歴 */}
+              {selectedMenu === 'ratings' && (
+                <div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+                    <h2 className="text-lg font-semibold text-typecast-text">{t(lang, 'myPageRatings')}</h2>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-typecast-muted">{t(lang, 'filterByRating')}:</span>
+                      <select
+                        value={feedbackFilter}
+                        onChange={(e) => setFeedbackFilter(e.target.value)}
+                        className="bg-typecast-bg border border-typecast-border rounded-lg px-3 py-1.5 text-sm text-typecast-text"
+                      >
+                        <option value="">{t(lang, 'filterAll')}</option>
+                        <option value="good">{t(lang, 'like')}</option>
+                        <option value="bad">{t(lang, 'dislike')}</option>
+                        <option value="watched">{t(lang, 'watched')}</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="overflow-y-auto max-h-[calc(100vh-300px)]">
+                    {feedbackData.length === 0 ? (
+                      <p className="text-typecast-muted text-center py-12">{t(lang, 'myPageRatingsEmpty')}</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {feedbackData
+                          .filter((item) => !feedbackFilter || item.type === feedbackFilter)
+                          .map((item, idx) => {
+                            const typeLabel = item.type === 'good' ? t(lang, 'like') : item.type === 'bad' ? t(lang, 'dislike') : t(lang, 'watched');
+                            const typeColor = item.type === 'good' ? 'text-typecast-accent' : item.type === 'bad' ? 'text-red-500' : 'text-green-600';
+                            const typeIcon = item.type === 'good' ? ThumbsUp : item.type === 'bad' ? ThumbsDown : Eye;
+                            const TypeIcon = typeIcon;
+                            
+                            return (
+                              <div key={`${item.title}-${item.created_at}-${idx}`} className="bg-typecast-bg rounded-xl border border-typecast-border p-4 hover:border-typecast-accent transition-colors">
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex-1">
+                                    <h3 className="text-base font-semibold text-typecast-text mb-1">{item.title}</h3>
+                                    <div className="flex items-center gap-2 text-xs text-typecast-muted">
+                                      <span>{new Date(item.created_at).toLocaleDateString(lang === 'ja' ? 'ja-JP' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                    </div>
+                                  </div>
+                                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg bg-typecast-surface border border-typecast-border ${typeColor}`}>
+                                    <TypeIcon className="w-4 h-4" />
+                                    <span className="text-sm font-medium">{typeLabel}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                       </div>
                     )}
                   </div>

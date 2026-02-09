@@ -1,6 +1,6 @@
 // src/services/feedback.ts
 import { apiClient } from '../lib/apiClient';
-import type { FeedbackType } from '../types'; // 型を利用
+import type { FeedbackType, Feedback } from '../types';
 
 export const feedbackService = {
   // 評価を送信
@@ -12,10 +12,9 @@ export const feedbackService = {
     });
   },
 
-  // (将来的に) 自分の評価一覧を取得
-  getFeedbacks: async (token: string) => {
-    // 型定義は後でちゃんと作るとして、一旦 any か専用の型
-    return apiClient<any[]>('/api/feedback', {
+  // 自分の評価一覧を取得
+  getFeedbacks: async (token: string): Promise<Feedback[]> => {
+    return apiClient<Feedback[]>('/api/feedback', {
       method: 'GET',
       token,
     });

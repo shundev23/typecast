@@ -76,3 +76,10 @@ export type SaveHistoryRequest = {
   score: number;
   sentiment_label: string;
 };
+
+// フィードバック（評価）データ
+export type Feedback = {
+  title: string;
+  type: FeedbackType;
+  created_at: string; // ISO 8601形式
+};

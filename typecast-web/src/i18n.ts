@@ -9,8 +9,11 @@ export type I18nKey =
   | 'myPageTitle'
   | 'myPageEmpty'
   | 'myPageHistory'
+  | 'myPageRatings'
+  | 'myPageRatingsEmpty'
   | 'myPageAccount'
   | 'filterByMood'
+  | 'filterByRating'
   | 'filterAll'
   | 'mbtiType'
   | 'mood'
@@ -108,9 +111,12 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     myPage: 'マイページ',
     myPageTitle: 'マイページ',
     myPageEmpty: 'まだレコメンド履歴がありません',
-    myPageHistory: 'おすすめされた履歴',
+    myPageHistory: 'レコメンド履歴',
+    myPageRatings: '評価履歴',
+    myPageRatingsEmpty: 'まだ評価した映画がありません',
     myPageAccount: 'アカウント設定',
     filterByMood: '気分でフィルタ',
+    filterByRating: '評価でフィルタ',
     filterAll: 'すべて',
     mbtiType: 'MBTI タイプ',
     mood: '今の気分',
@@ -209,8 +215,11 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     myPageTitle: 'My Page',
     myPageEmpty: 'No recommendations yet',
     myPageHistory: 'Recommendation History',
+    myPageRatings: 'Rating History',
+    myPageRatingsEmpty: 'No rated movies yet',
     myPageAccount: 'Account Settings',
     filterByMood: 'Filter by mood',
+    filterByRating: 'Filter by rating',
     filterAll: 'All',
     mbtiType: 'MBTI Type',
     mood: 'Mood',
