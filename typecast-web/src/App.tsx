@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 // アイコン
-import { Sparkles, Loader2, Brain, Lightbulb, LogIn, User as UserIcon, Share2, Ban, X, Info, Moon, Sun, Languages } from 'lucide-react';
+import { Sparkles, Loader2, Brain, Lightbulb, LogIn, User as UserIcon, Link2, Ban, X, Info, Moon, Sun, Languages } from 'lucide-react';
 // Firebase Auth (認証)
 import { signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged } from 'firebase/auth';
 import type { User } from 'firebase/auth';
@@ -343,7 +343,7 @@ function App() {
     }
   };
 
-  // シェア機能の実装
+  // シェア機能の実装（リンクをコピー）
   const handleShare = async () => {
     if (movies.length === 0) return;
     
@@ -356,10 +356,27 @@ function App() {
       const data = await shareService.createLink(movie.title, mood, latestScore);
       const shareUrl = data.share_url;
 
-      const text = `🎬 TYPECAST Analysis Result\n\n👤 Type: ${mbti}\n🧠 Mood: "${mood}"\n\n#TYPECAST`;
-      const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
-      
-      window.open(xUrl, '_blank');
+      // クリップボードにコピー
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success(t(lang, 'linkCopied'));
+      } else {
+        // フォールバック: 古いブラウザ対応
+        const textArea = document.createElement('textarea');
+        textArea.value = shareUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          toast.success(t(lang, 'linkCopied'));
+        } catch (err) {
+          console.error('Fallback copy failed:', err);
+          toast.error(t(lang, 'shareFailed'));
+        }
+        document.body.removeChild(textArea);
+      }
 
     } catch (error) {
       console.error("Share Error:", error);
@@ -676,8 +693,8 @@ function HomePage({
               onClick={handleShare}
               className="flex items-center gap-2 text-typecast-muted hover:text-typecast-accent border border-typecast-border hover:border-typecast-accent rounded-lg px-4 py-2 text-sm font-medium transition-colors"
             >
-              <Share2 className="w-4 h-4" />
-              <span>{t(lang, 'shareOnX')}</span>
+              <Link2 className="w-4 h-4" />
+              <span>{t(lang, 'copyLink')}</span>
             </button>
           </div>
         )}

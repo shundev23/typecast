@@ -35,6 +35,9 @@ func (h *OgpHandler) GetOgpImage(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate image"})
 	}
 
+	// キャッシュヘッダーを設定（24時間）
+	c.Response().Header().Set("Cache-Control", "public, max-age=86400")
+
 	// バイナリデータを "image/png" として返す
 	return c.Blob(http.StatusOK, "image/png", imgBytes)
 }

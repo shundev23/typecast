@@ -37,6 +37,8 @@ export type I18nKey =
   | 'mbtiESFP'
   | 'analyzeRecommend'
   | 'shareOnX'
+  | 'copyLink'
+  | 'linkCopied'
   | 'analysisResult'
   | 'sentimentScore'
   | 'availableInJP'
@@ -135,6 +137,8 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     mbtiESFP: 'エンターテイナー',
     analyzeRecommend: '映画をおすすめしてもらう',
     shareOnX: 'X でシェア',
+    copyLink: 'リンクをコピー',
+    linkCopied: 'リンクをコピーしました',
     analysisResult: '分析結果',
     sentimentScore: 'Sentiment Score',
     availableInJP: '視聴可能 (日本)',
@@ -233,6 +237,8 @@ const dict: Record<Lang, Record<I18nKey, string>> = {
     mbtiESFP: 'Entertainer',
     analyzeRecommend: 'Analyze & Recommend',
     shareOnX: 'Share on X',
+    copyLink: 'Copy Link',
+    linkCopied: 'Link copied to clipboard',
     analysisResult: 'Analysis',
     sentimentScore: 'Sentiment Score',
     availableInJP: 'Available in Japan',

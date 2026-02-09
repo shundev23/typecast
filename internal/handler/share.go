@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -73,7 +74,12 @@ func (h *ShareHandler) HandleShareLink(c echo.Context) error {
 
 	// 2. User-Agent判定 (Botかどうか)
 	ua := c.Request().UserAgent()
-	if isBot(ua) {
+	isUserBot := isBot(ua)
+	
+	// デバッグログ
+	log.Printf("Share link accessed: id=%s, UA=%s, isBot=%v", id, ua, isUserBot)
+	
+	if isUserBot {
 		// Botの場合: OGPメタタグを含んだHTMLを返す
 		// 画像URLを構築
 		// タイトルやムードに日本語・スペース等が含まれても壊れないようURLエンコードする
@@ -85,24 +91,48 @@ func (h *ShareHandler) HandleShareLink(c echo.Context) error {
 			data.Score,
 		)
 		
+		// OGP用のタイトルと説明を構築
+		ogTitle := fmt.Sprintf("TYPECAST: %s", data.Title)
+		ogDescription := fmt.Sprintf("Mood: %s | Sentiment Score: %d", data.Mood, data.Score)
+		
 		html := fmt.Sprintf(`<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>TYPECAST Analysis: %s</title>
-	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:title" content="TYPECAST: %s" />
-	<meta name="twitter:description" content="Mood: %s | Sentiment: %d" />
-	<meta name="twitter:image" content="%s" />
-	<meta property="og:title" content="TYPECAST: %s" />
-	<meta property="og:description" content="Mood: %s | Sentiment: %d" />
-	<meta property="og:image" content="%s" />
+	
+	<!-- Open Graph / Facebook -->
 	<meta property="og:type" content="website" />
+	<meta property="og:url" content="%s/s/%s" />
+	<meta property="og:title" content="%s" />
+	<meta property="og:description" content="%s" />
+	<meta property="og:image" content="%s" />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	
+	<!-- Twitter -->
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:url" content="%s/s/%s" />
+	<meta name="twitter:title" content="%s" />
+	<meta name="twitter:description" content="%s" />
+	<meta name="twitter:image" content="%s" />
+	
+	<meta http-equiv="refresh" content="0;url=%s?share_id=%s">
 </head>
 <body>
-	<h1>Redirecting...</h1>
+	<h1>Redirecting to TYPECAST...</h1>
+	<p>If you are not redirected automatically, <a href="%s?share_id=%s">click here</a>.</p>
 </body>
-</html>`, data.Title, data.Title, data.Mood, data.Score, imgURL, data.Title, data.Mood, data.Score, imgURL)
+</html>`, 
+			data.Title,
+			h.APIBaseURL, id,
+			ogTitle, ogDescription, imgURL,
+			h.APIBaseURL, id,
+			ogTitle, ogDescription, imgURL,
+			h.FrontendURL, id,
+			h.FrontendURL, id,
+		)
 
 		return c.HTML(http.StatusOK, html)
 	}
@@ -118,10 +148,21 @@ func isBot(ua string) bool {
 	bots := []string{
 		"twitterbot",
 		"facebookexternalhit",
+		"facebookcatalog",
 		"linkedinbot",
+		"slackbot",
 		"slackbot-linkexpanding",
 		"discordbot",
 		"whatsapp",
+		"telegrambot",
+		"line",
+		"skypeuripreview",
+		"pinterest",
+		"googlebot",
+		"bingbot",
+		"baiduspider",
+		"yandexbot",
+		"applebot",
 	}
 	for _, bot := range bots {
 		if strings.Contains(ua, bot) {
