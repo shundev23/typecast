@@ -170,11 +170,16 @@ function App() {
     };
   }, [lang]);
 
-  // --- 2. ログイン時に履歴データをAPIから取得 ---
+  // --- 2. ログイン時に履歴データをAPIから取得 / ログアウト時に状態をクリア ---
   useEffect(() => {
     if (!user) {
-      console.log('User is null, clearing history data');
+      console.log('User is null, clearing all user-related data');
       setHistoryData([]);
+      setMovies([]);
+      setUsage(null);
+      setMood('');
+      setShowLimitModal(false);
+      setShowGeminiQuotaModal(false);
       return;
     }
 
