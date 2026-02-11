@@ -52,7 +52,12 @@ export function MyPage({ user, lang, setLang, darkMode, setDarkMode }: MyPagePro
   useEffect(() => {
     if (!user) return;
     user.getIdToken().then((token) => {
-      historyService.fetchAll(token).then(setHistoryData).catch(console.error);
+      historyService.fetchAll(token)
+        .then((data) => setHistoryData(data || []))
+        .catch((error) => {
+          console.error('Failed to fetch history:', error);
+          setHistoryData([]);
+        });
     }).catch(console.error);
   }, [user]);
 
@@ -60,7 +65,12 @@ export function MyPage({ user, lang, setLang, darkMode, setDarkMode }: MyPagePro
   useEffect(() => {
     if (!user) return;
     user.getIdToken().then((token) => {
-      feedbackService.getFeedbacks(token).then(setFeedbackData).catch(console.error);
+      feedbackService.getFeedbacks(token)
+        .then((data) => setFeedbackData(data || []))
+        .catch((error) => {
+          console.error('Failed to fetch feedbacks:', error);
+          setFeedbackData([]);
+        });
     }).catch(console.error);
   }, [user]);
 
@@ -103,7 +113,7 @@ export function MyPage({ user, lang, setLang, darkMode, setDarkMode }: MyPagePro
       
       // 評価データを再取得して即座に反映
       const updatedFeedbacks = await feedbackService.getFeedbacks(token);
-      setFeedbackData(updatedFeedbacks);
+      setFeedbackData(updatedFeedbacks || []);
     } catch (error) {
       console.error('Feedback error:', error);
       toast.error(t(lang, 'feedbackFailed'));
