@@ -108,9 +108,6 @@ function App() {
     let cancelled = false;
     let unsubscribe: (() => void) | null = null;
 
-    console.log('=== Auth initialization started ===');
-    console.log('Current auth state:', auth.currentUser?.uid || 'null');
-
     // リダイレクト結果を先に処理してから、onAuthStateChangedを設定
     const initAuth = async () => {
       try {
@@ -118,15 +115,8 @@ function App() {
         if (cancelled) return;
         
         if (cred?.user) {
-          console.log('✅ Redirect sign-in success:', {
-            uid: cred.user.uid,
-            email: cred.user.email,
-            displayName: cred.user.displayName,
-          });
           // リダイレクト結果がある場合は、明示的にユーザーを設定
           setUser(cred.user);
-        } else {
-          console.log('ℹ️ No redirect result (normal page load)');
         }
       } catch (err) {
         if (cancelled) return;
@@ -148,14 +138,8 @@ function App() {
 
       // getRedirectResult()の処理が完了してから、onAuthStateChangedを設定
       if (!cancelled) {
-        console.log('Setting up onAuthStateChanged listener');
         unsubscribe = onAuthStateChanged(auth, (currentUser) => {
           if (!cancelled) {
-            console.log('🔄 Auth state changed:', {
-              uid: currentUser?.uid || 'null',
-              email: currentUser?.email || 'null',
-              isAnonymous: currentUser?.isAnonymous,
-            });
             setUser(currentUser);
           }
         });
@@ -173,7 +157,6 @@ function App() {
   // --- 2. ログイン時に履歴データをAPIから取得 / ログアウト時に状態をクリア ---
   useEffect(() => {
     if (!user) {
-      console.log('User is null, clearing all user-related data');
       setHistoryData([]);
       setMovies([]);
       setUsage(null);
@@ -183,14 +166,11 @@ function App() {
       return;
     }
 
-    console.log('User logged in, fetching history for:', user.uid);
 
     const fetchHistory = async () => {
       try {
         const token = await user.getIdToken();
-        console.log('ID token obtained, calling history API...');
         const items = await historyService.fetchAll(token);
-        console.log('History fetched successfully:', items.length, 'items');
         setHistoryData(items);
       } catch (error) {
         console.error("Failed to fetch history:", error);
@@ -210,25 +190,11 @@ function App() {
 
   const handleLogin = async () => {
     try {
-      console.log('🔐 Login attempt started');
-      console.log('Environment:', {
-        isDev: import.meta.env.DEV,
-        mode: import.meta.env.MODE,
-        authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-      });
       
       if (import.meta.env.DEV) {
-        console.log('Using popup sign-in (DEV mode)');
         const result = await signInWithPopup(auth, googleProvider);
-        console.log('✅ Popup sign-in success:', {
-          uid: result.user.uid,
-          email: result.user.email,
-        });
       } else {
-        console.log('Using redirect sign-in (PROD mode)');
         await signInWithRedirect(auth, googleProvider);
-        console.log('Redirect initiated (page will reload)');
-        // リダイレクトが開始されるため、この後のコードは実行されない
       }
     } catch (err) {
       const error = err as { code?: string; message?: string };

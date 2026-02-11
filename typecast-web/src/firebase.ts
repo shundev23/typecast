@@ -51,10 +51,6 @@ const getCurrentAuthDomain = (): string => {
 };
 
 const authDomain = getCurrentAuthDomain();
-console.log('Selected authDomain based on hostname:', {
-  hostname: window.location.hostname,
-  authDomain: authDomain,
-});
 
 const firebaseConfig = {
   apiKey: requiredEnvVars.apiKey,
@@ -64,12 +60,6 @@ const firebaseConfig = {
   messagingSenderId: requiredEnvVars.messagingSenderId,
   appId: requiredEnvVars.appId,
 };
-
-// デバッグ用: Firebase設定をログ出力（APIキーは一部マスク）
-console.log('Firebase Config:', {
-  ...firebaseConfig,
-  apiKey: firebaseConfig.apiKey ? firebaseConfig.apiKey.substring(0, 10) + '...' : 'undefined',
-});
 
 // Firebaseアプリの初期化
 const app = initializeApp(firebaseConfig);
@@ -81,9 +71,4 @@ export const db = getFirestore(app, "typecast-db");
 
 // 認証の永続化を明示的に設定（ブラウザのローカルストレージに保存）
 setPersistence(auth, browserLocalPersistence)
-  .then(() => {
-    console.log('Auth persistence set to LOCAL');
-  })
-  .catch((error) => {
-    console.error('Failed to set auth persistence:', error);
-  });
+  .catch(console.error);
