@@ -192,7 +192,7 @@ function App() {
     try {
       
       if (import.meta.env.DEV) {
-        const result = await signInWithPopup(auth, googleProvider);
+        await signInWithPopup(auth, googleProvider);
       } else {
         await signInWithRedirect(auth, googleProvider);
       }
